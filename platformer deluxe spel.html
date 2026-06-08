@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Super Platformer Deluxe</title>
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:#111;
+  font-family:Arial;
+}
+
+canvas{
+  display:block;
+  margin:auto;
+  background:linear-gradient(#6ec6ff,#eaf7ff);
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game" width="900" height="500"></canvas>
+
+<script>
+
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
+
+// =====================================
+// AUDIO
+// =====================================
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function beep(freq,time,type="sine"){
+
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+
+  o.type = type;
+  o.frequency.value = freq;
+
+  o.connect(g);
+  g.connect(audioCtx.destination);
+
+  o.start();
+
+  g.gain.setValueAtTime(0.2,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioCtx.currentTime + time
+  );
+
+  o.stop(audioCtx.currentTime + time);
+}
+
+const SFX = {
+
+  jump: ()=>beep(300,0.1),
+
+  coin: ()=>beep(800,0.1),
+
+  hit: ()=>beep(120,0.2,"square")
+};
+
+function victorySound(){
+
+  beep(523,0.1);
+
+  setTimeout(()=>{
+    beep(659,0.1);
+  },100);
+
+  setTimeout(()=>{
+    beep(784,0.2);
+  },200);
+}
+
+// =====================================
+// GAME STATE
+// =====================================
+
+let gameState = "menu";
+
+let currentLevel = 1;
+
+let levelComplete = false;
+
+let nextLevelTimer = 0;
+
+let cameraX = 0;
+
+const gravity = 0.8;
+
+const keys = {};
+
+document.addEventListener("keydown", e=>{
+
+  keys[e.code] = true;
+
+  if(gameState === "menu"){
+    gameState = "play";
+  }
+});
+
+document.addEventListener("keyup", e=>{
+  keys[e.code] = false;
+});
+
+// =====================================
+// PLAYER
+// =====================================
+
+const player = {
+
+  x:50,
+  y:300,
+
+  w:30,
+  h:30,
+
+  vx:0,
+  vy:0,
+
+  jumping:false,
+  doubleJump:false,
+
+  coins:0,
+
+  spawnX:50,
+  spawnY:300,
+
+  prevY:300
+};
+
+// =====================================
+// LEVEL
+// =====================================
+
+let level = {};
+
+function generateLevel(num){
+
+  levelComplete = false;
+
+  nextLevelTimer = 300;
+
+  level = {
+
+    platforms:[
+      {x:0,y:450,w:3500,h:50}
+    ],
+
+    coins:[],
+
+    enemies:[],
+
+    flag:{
+      x:2600,
+      y:250,
+      w:20,
+      h:200
+    }
+  };
+
+  // platforms
+  for(let i=0;i<12;i++){
+
+    const px = 250 + i*200;
+
+    const py = 180 + Math.random()*220;
+
+    level.platforms.push({
+
+      x:px,
+      y:py,
+      w:100 + Math.random()*80,
+      h:20
+    });
+
+    // coin
+    level.coins.push({
+
+      x:px + 40,
+      y:py - 40,
+      got:false
+    });
+  }
+
+  // enemies
+  for(let i=0;i<3+num;i++){
+
+    const size = 20 + Math.random()*30;
+
+    level.enemies.push({
+
+      x:500 + i*300,
+      y:420,
+
+      w:size,
+      h:size,
+
+      vx:1 + Math.random()*2,
+
+      dead:false,
+
+      color:`hsl(${Math.random()*360},70%,50%)`
+    });
+  }
+
+  player.x = 50;
+  player.y = 300;
+}
+
+generateLevel(currentLevel);
+
+// =====================================
+// BIRDS
+// =====================================
+
+const birds = [];
+
+for(let i=0;i<5;i++){
+
+  birds.push({
+
+    x:Math.random()*3000,
+    y:50 + Math.random()*120,
+
+    speed:1 + Math.random()*2,
+
+    flap:0
+  });
+}
+
+// =====================================
+// RAIN
+// =====================================
+
+const rain = [];
+
+for(let i=0;i<120;i++){
+
+  rain.push({
+
+    x:Math.random()*3500,
+    y:Math.random()*500,
+
+    speed:4 + Math.random()*4
+  });
+}
+
+// =====================================
+// CONFETTI
+// =====================================
+
+const confetti = [];
+
+// =====================================
+// COLLISION
+// =====================================
+
+function hit(a,b){
+
+  return (
+    a.x < b.x+b.w &&
+    a.x+a.w > b.x &&
+    a.y < b.y+b.h &&
+    a.y+a.h > b.y
+  );
+}
+
+// =====================================
+// RESPAWN
+// =====================================
+
+function respawn(){
+
+  player.x = player.spawnX;
+  player.y = player.spawnY;
+
+  player.vx = 0;
+  player.vy = 0;
+
+  SFX.hit();
+}
+
+// =====================================
+// UPDATE
+// =====================================
+
+function update(){
+
+  if(gameState !== "play") return;
+
+  player.prevY = player.y;
+
+  // movement
+  if(keys["ArrowLeft"]){
+
+    player.vx = -5;
+
+  }else if(keys["ArrowRight"]){
+
+    player.vx = 5;
+
+  }else{
+
+    player.vx = 0;
+  }
+
+  // jump
+  if(keys["ArrowUp"]){
+
+    if(!player.jumping){
+
+      player.vy = -14;
+
+      player.jumping = true;
+
+      player.doubleJump = true;
+
+      SFX.jump();
+
+    }else if(player.doubleJump){
+
+      player.vy = -12;
+
+      player.doubleJump = false;
+
+      SFX.jump();
+    }
+
+    keys["ArrowUp"] = false;
+  }
+
+  player.vy += gravity;
+
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // platforms
+  player.jumping = true;
+
+  for(let p of level.platforms){
+
+    if(hit(player,p)){
+
+      if(player.vy > 0){
+
+        player.y = p.y - player.h;
+
+        player.vy = 0;
+
+        player.jumping = false;
+      }
+    }
+  }
+
+  // coins
+  for(let c0 of level.coins){
+
+    if(!c0.got &&
+       hit(player,{
+         x:c0.x,
+         y:c0.y,
+         w:20,
+         h:20
+       })){
+
+      c0.got = true;
+
+      player.coins++;
+
+      SFX.coin();
+    }
+  }
+
+  // enemies
+  for(let e of level.enemies){
+
+    if(e.dead) continue;
+
+    e.x += e.vx;
+
+    if(e.x < 0 || e.x > 3300){
+
+      e.vx *= -1;
+    }
+
+    if(hit(player,e)){
+
+      const stomp =
+        player.vy > 0 &&
+        player.y + player.h - 10 < e.y;
+
+      if(stomp){
+
+        e.dead = true;
+
+        player.vy = -10;
+
+        player.coins++;
+
+        SFX.coin();
+
+      }else{
+
+        respawn();
+      }
+    }
+  }
+
+  // flag
+  if(!levelComplete && hit(player,level.flag)){
+
+    levelComplete = true;
+
+    victorySound();
+
+    // confetti
+    for(let i=0;i<150;i++){
+
+      confetti.push({
+
+        x:player.x,
+        y:player.y,
+
+        vx:-5 + Math.random()*10,
+        vy:-10 + Math.random()*5,
+
+        size:4 + Math.random()*6,
+
+        color:`hsl(${Math.random()*360},100%,50%)`
+      });
+    }
+  }
+
+  // next level
+  if(levelComplete){
+
+    nextLevelTimer--;
+
+    if(nextLevelTimer <= 0){
+
+      currentLevel++;
+
+      generateLevel(currentLevel);
+    }
+  }
+
+  // confetti physics
+  for(let p of confetti){
+
+    p.x += p.vx;
+    p.y += p.vy;
+
+    p.vy += 0.3;
+  }
+
+  // birds
+  for(let b of birds){
+
+    b.x += b.speed;
+
+    b.flap += 0.2;
+
+    if(b.x > cameraX + 1200){
+
+      b.x = cameraX - 200;
+    }
+  }
+
+  // rain
+  for(let r of rain){
+
+    r.y += r.speed;
+
+    if(r.y > 500){
+
+      r.y = 0;
+
+      r.x = cameraX + Math.random()*900;
+    }
+  }
+
+  // fall
+  if(player.y > 700){
+
+    respawn();
+  }
+
+  // camera
+  cameraX = player.x - 250;
+}
+
+// =====================================
+// DRAW
+// =====================================
+
+function draw(){
+
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // menu
+  if(gameState === "menu"){
+
+    ctx.fillStyle = "black";
+
+    ctx.font = "48px Arial";
+
+    ctx.fillText("SUPER PLATFORMER",180,200);
+
+    ctx.font = "24px Arial";
+
+    ctx.fillText(
+      "Tryck valfri tangent",
+      280,
+      260
+    );
+
+    return;
+  }
+
+  ctx.save();
+
+  ctx.translate(-cameraX,0);
+
+  // sky
+  ctx.fillStyle = "#bfe9ff";
+  ctx.fillRect(cameraX,0,900,500);
+
+  // platforms
+  for(let p of level.platforms){
+
+    ctx.fillStyle = "#8B5A2B";
+    ctx.fillRect(p.x,p.y,p.w,p.h);
+
+    ctx.fillStyle = "#3CB043";
+    ctx.fillRect(p.x,p.y,p.w,5);
+  }
+
+  // coins
+  for(let c0 of level.coins){
+
+    if(!c0.got){
+
+      ctx.fillStyle = "gold";
+
+      ctx.beginPath();
+
+      ctx.arc(c0.x,c0.y,8,0,Math.PI*2);
+
+      ctx.fill();
+    }
+  }
+
+  // enemies
+  for(let e of level.enemies){
+
+    if(e.dead) continue;
+
+    ctx.fillStyle = e.color;
+
+    ctx.beginPath();
+
+    ctx.roundRect(e.x,e.y,e.w,e.h,8);
+
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle = "white";
+
+    ctx.fillRect(e.x+5,e.y+6,5,5);
+
+    ctx.fillRect(
+      e.x+e.w-10,
+      e.y+6,
+      5,
+      5
+    );
+  }
+
+  // player
+  ctx.fillStyle = "#ff0000";
+  ctx.fillRect(
+    player.x,
+    player.y,
+    player.w,
+    player.h
+  );
+
+  // blue pants
+  ctx.fillStyle = "#0033cc";
+  ctx.fillRect(
+    player.x,
+    player.y+20,
+    player.w,
+    10
+  );
+
+  // birds
+  for(let b of birds){
+
+    ctx.strokeStyle = "black";
+
+    ctx.beginPath();
+
+    ctx.moveTo(b.x,b.y);
+
+    ctx.lineTo(
+      b.x-10,
+      b.y + 5*Math.sin(b.flap)
+    );
+
+    ctx.lineTo(
+      b.x+10,
+      b.y + 5*Math.sin(b.flap)
+    );
+
+    ctx.stroke();
+  }
+
+  // rain
+  ctx.strokeStyle = "rgba(0,0,255,0.3)";
+
+  for(let r of rain){
+
+    ctx.beginPath();
+
+    ctx.moveTo(r.x,r.y);
+
+    ctx.lineTo(r.x+2,r.y+10);
+
+    ctx.stroke();
+  }
+
+  // flag
+  ctx.fillStyle = "#999";
+
+  ctx.fillRect(
+    level.flag.x,
+    level.flag.y,
+    8,
+    level.flag.h
+  );
+
+  ctx.fillStyle = "red";
+
+  ctx.beginPath();
+
+  ctx.moveTo(level.flag.x+8,level.flag.y);
+
+  ctx.lineTo(level.flag.x+60,level.flag.y+20);
+
+  ctx.lineTo(level.flag.x+8,level.flag.y+40);
+
+  ctx.fill();
+
+  // confetti
+  for(let p of confetti){
+
+    ctx.fillStyle = p.color;
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.size,
+      p.size
+    );
+  }
+
+  ctx.restore();
+
+  // UI
+  ctx.fillStyle = "black";
+
+  ctx.font = "22px Arial";
+
+  ctx.fillText(
+    "Coins: " + player.coins,
+    20,
+    30
+  );
+
+  ctx.fillText(
+    "Level: " + currentLevel,
+    20,
+    60
+  );
+
+  // countdown
+  if(levelComplete){
+
+    ctx.font = "40px Arial";
+
+    ctx.fillText(
+      "NEXT LEVEL IN: " +
+      Math.ceil(nextLevelTimer/60),
+      220,
+      200
+    );
+  }
+}
+
+// =====================================
+// LOOP
+// =====================================
+
+function loop(){
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+
+</body>
+</html>
