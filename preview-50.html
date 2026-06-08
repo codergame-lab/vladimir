@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ninja Chess</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    background:
+        radial-gradient(circle at top,#0f234d,#050914 70%);
+    font-family:Arial;
+    color:white;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+#game{
+    display:flex;
+    gap:30px;
+}
+
+#left{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+#board{
+    display:grid;
+    grid-template-columns:repeat(8,110px);
+    border:3px solid #4ea1ff;
+    box-shadow:
+        0 0 25px rgba(0,0,0,0.9),
+        0 0 20px rgba(59,130,246,0.4);
+}
+
+.square{
+    width:110px;
+    height:110px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    cursor:pointer;
+}
+
+.light{
+    background:#b8d1ff;
+}
+
+.dark{
+    background:#0f3470;
+}
+
+.square:hover{
+    filter:brightness(1.08);
+}
+
+.selected{
+    outline:5px solid yellow;
+    z-index:2;
+}
+
+.move::after{
+    content:"";
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:rgba(0,255,100,0.7);
+    position:absolute;
+}
+
+.piece{
+    width:88px;
+    height:88px;
+    border-radius:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:52px;
+    font-weight:bold;
+    transition:0.2s;
+    user-select:none;
+}
+
+.blue{
+    background:
+        linear-gradient(
+            145deg,
+            #2563eb,
+            #0f172a
+        );
+
+    color:#8ec5ff;
+
+    box-shadow:
+        inset 0 0 12px rgba(255,255,255,0.2),
+        0 0 18px rgba(37,99,235,0.9);
+}
+
+.red{
+    background:
+        linear-gradient(
+            145deg,
+            #dc2626,
+            #240909
+        );
+
+    color:#ff8b8b;
+
+    box-shadow:
+        inset 0 0 12px rgba(255,255,255,0.2),
+        0 0 18px rgba(239,68,68,0.9);
+}
+
+#panel{
+    width:360px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+}
+
+.logo{
+    text-align:center;
+    font-size:64px;
+    font-weight:bold;
+    line-height:0.9;
+    text-shadow:0 0 18px black;
+}
+
+.logoBlue{
+    color:#60a5fa;
+}
+
+.logoRed{
+    color:#ef4444;
+}
+
+.card{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10,15,30,0.95),
+            rgba(0,0,0,0.95)
+        );
+
+    border:2px solid rgba(255,255,255,0.08);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 0 18px rgba(0,0,0,0.6);
+}
+
+.redBorder{
+    border-color:#ef4444;
+    box-shadow:0 0 18px rgba(239,68,68,0.4);
+}
+
+.blueBorder{
+    border-color:#2563eb;
+    box-shadow:0 0 18px rgba(37,99,235,0.4);
+}
+
+.title{
+    font-size:38px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.redText{
+    color:#ef4444;
+}
+
+.blueText{
+    color:#3b82f6;
+}
+
+.small{
+    font-size:28px;
+    opacity:0.9;
+}
+
+#status{
+    text-align:center;
+    font-size:34px;
+    font-weight:bold;
+}
+
+.buttons{
+    display:flex;
+    gap:16px;
+}
+
+button{
+    flex:1;
+    background:
+        linear-gradient(
+            145deg,
+            #0f172a,
+            #020617
+        );
+
+    color:white;
+    border:2px solid #2563eb;
+    padding:22px;
+    border-radius:18px;
+    font-size:28px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:scale(1.04);
+}
+
+#legend{
+    margin-top:25px;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:20px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(0,0,0,0.9),
+            rgba(15,23,42,0.95)
+        );
+
+    border-radius:18px;
+    padding:20px;
+    border:2px solid rgba(255,255,255,0.08);
+}
+
+.legendItem{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:26px;
+}
+
+.legendPiece{
+    width:65px;
+    height:65px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+<div id="left">
+
+<div id="board"></div>
+
+<div id="legend">
+
+<div class="legendItem">
+<div class="legendPiece blue">🥷</div>
+BONDE
+</div>
+
+<div class="legendItem">
+<div class="legendPiece blue">🏯</div>
+TORN
+</div>
+
+<div class="legendItem">
+<div class="legendPiece blue">🐎</div>
+HÄST
+</div>
+
+<div class="legendItem">
+<div class="legendPiece blue">⚔️</div>
+LÖPARE
+</div>
+
+<div class="legendItem">
+<div class="legendPiece blue">👑</div>
+DAM
+</div>
+
+<div class="legendItem">
+<div class="legendPiece blue">🎌</div>
+KUNG
+</div>
+
+</div>
+
+</div>
+
+<div id="panel">
+
+<div class="logo">
+<span class="logoBlue">NINJA</span><br>
+<span class="logoRed">CHESS</span>
+</div>
+
+<div class="card redBorder">
+<div class="title redText">
+RÖD NINJA (AI)
+</div>
+
+<div class="small">
+Svårighetsgrad: Normal
+</div>
+</div>
+
+<div class="card">
+<div id="status">
+Blå spelar
+</div>
+</div>
+
+<div class="card blueBorder">
+<div class="title blueText">
+BLÅ NINJA (DU)
+</div>
+
+<div class="small">
+Din tur
+</div>
+</div>
+
+<div class="buttons">
+<button onclick="resetGame()">
+↻ NYTT SPEL
+</button>
+
+<button onclick="giveUp()">
+🏳 GE UPP
+</button>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const AI_SPEED = 1800;
+
+const boardElement =
+document.getElementById("board");
+
+const statusText =
+document.getElementById("status");
+
+const pieces = {
+
+wp:"🥷",
+wr:"🏯",
+wn:"🐎",
+wb:"⚔️",
+wq:"👑",
+wk:"🎌",
+
+bp:"🥷",
+br:"🏯",
+bn:"🐎",
+bb:"⚔️",
+bq:"👑",
+bk:"🎌"
+
+};
+
+let board;
+let selected;
+let turn;
+let gameOver;
+
+startGame();
+
+function startGame(){
+
+board = [
+
+["br","bn","bb","bq","bk","bb","bn","br"],
+["bp","bp","bp","bp","bp","bp","bp","bp"],
+[null,null,null,null,null,null,null,null],
+[null,null,null,null,null,null,null,null],
+[null,null,null,null,null,null,null,null],
+[null,null,null,null,null,null,null,null],
+["wp","wp","wp","wp","wp","wp","wp","wp"],
+["wr","wn","wb","wq","wk","wb","wn","wr"]
+
+];
+
+selected = null;
+turn = "white";
+gameOver = false;
+
+drawBoard();
+updateStatus();
+
+}
+
+function resetGame(){
+startGame();
+}
+
+function giveUp(){
+
+gameOver = true;
+
+statusText.textContent =
+"Röd ninja vann!";
+}
+
+function getColor(piece){
+
+if(!piece) return null;
+
+return piece[0] === "w"
+? "white"
+: "black";
+}
+
+function inside(r,c){
+
+return r>=0 &&
+r<8 &&
+c>=0 &&
+c<8;
+}
+
+function copyBoard(b){
+
+return b.map(
+row => [...row]
+);
+
+}
+
+function findKing(b,color){
+
+const king =
+color==="white"
+? "wk"
+: "bk";
+
+for(let r=0;r<8;r++){
+for(let c=0;c<8;c++){
+
+if(b[r][c]===king){
+return [r,c];
+}
+
+}
+}
+
+return null;
+}
+
+function isCheck(b,color){
+
+const kingPos =
+findKing(b,color);
+
+if(!kingPos) return true;
+
+const enemy =
+color==="white"
+? "black"
+: "white";
+
+for(let r=0;r<8;r++){
+for(let c=0;c<8;c++){
+
+const piece = b[r][c];
+
+if(
+piece &&
+getColor(piece)===enemy
+){
+
+const moves =
+getRawMoves(b,r,c);
+
+for(let move of moves){
+
+if(
+move[0]===kingPos[0] &&
+move[1]===kingPos[1]
+){
+return true;
+}
+
+}
+}
+
+}
+}
+
+return false;
+}
+
+function getRawMoves(b,r,c){
+
+const piece = b[r][c];
+
+if(!piece) return [];
+
+const color = getColor(piece);
+
+const enemy =
+color==="white"
+? "black"
+: "white";
+
+const type = piece[1];
+
+const moves = [];
+
+if(type==="p"){
+
+const dir =
+color==="white"
+? -1
+: 1;
+
+const start =
+color==="white"
+? 6
+: 1;
+
+if(
+inside(r+dir,c) &&
+!b[r+dir][c]
+){
+
+moves.push([r+dir,c]);
+
+if(
+r===start &&
+!b[r+dir*2][c]
+){
+moves.push([r+dir*2,c]);
+}
+
+}
+
+for(let dc of [-1,1]){
+
+let nr = r+dir;
+let nc = c+dc;
+
+if(
+inside(nr,nc) &&
+b[nr][nc] &&
+getColor(b[nr][nc])===enemy
+){
+moves.push([nr,nc]);
+}
+
+}
+
+}
+
+if(type==="r" || type==="q"){
+
+const dirs = [
+[1,0],[-1,0],
+[0,1],[0,-1]
+];
+
+for(let [dr,dc] of dirs){
+
+let nr = r+dr;
+let nc = c+dc;
+
+while(inside(nr,nc)){
+
+if(!b[nr][nc]){
+
+moves.push([nr,nc]);
+
+}else{
+
+if(
+getColor(b[nr][nc])===enemy
+){
+moves.push([nr,nc]);
+}
+
+break;
+}
+
+nr += dr;
+nc += dc;
+
+}
+
+}
+
+}
+
+if(type==="b" || type==="q"){
+
+const dirs = [
+[1,1],[1,-1],
+[-1,1],[-1,-1]
+];
+
+for(let [dr,dc] of dirs){
+
+let nr = r+dr;
+let nc = c+dc;
+
+while(inside(nr,nc)){
+
+if(!b[nr][nc]){
+
+moves.push([nr,nc]);
+
+}else{
+
+if(
+getColor(b[nr][nc])===enemy
+){
+moves.push([nr,nc]);
+}
+
+break;
+}
+
+nr += dr;
+nc += dc;
+
+}
+
+}
+
+}
+
+if(type==="n"){
+
+const jumps = [
+[2,1],[2,-1],
+[-2,1],[-2,-1],
+[1,2],[1,-2],
+[-1,2],[-1,-2]
+];
+
+for(let [dr,dc] of jumps){
+
+let nr = r+dr;
+let nc = c+dc;
+
+if(
+inside(nr,nc) &&
+(
+!b[nr][nc] ||
+getColor(b[nr][nc])===enemy
+)
+){
+moves.push([nr,nc]);
+}
+
+}
+
+}
+
+if(type==="k"){
+
+const dirs = [
+[1,0],[-1,0],
+[0,1],[0,-1],
+[1,1],[1,-1],
+[-1,1],[-1,-1]
+];
+
+for(let [dr,dc] of dirs){
+
+let nr = r+dr;
+let nc = c+dc;
+
+if(
+inside(nr,nc) &&
+(
+!b[nr][nc] ||
+getColor(b[nr][nc])===enemy
+)
+){
+moves.push([nr,nc]);
+}
+
+}
+
+}
+
+return moves;
+}
+
+function getLegalMoves(b,r,c){
+
+const piece = b[r][c];
+
+if(!piece) return [];
+
+const color =
+getColor(piece);
+
+const raw =
+getRawMoves(b,r,c);
+
+const legal = [];
+
+for(let move of raw){
+
+const test =
+copyBoard(b);
+
+const [tr,tc] = move;
+
+test[tr][tc] =
+test[r][c];
+
+test[r][c] = null;
+
+if(!isCheck(test,color)){
+legal.push(move);
+}
+
+}
+
+return legal;
+}
+
+function hasLegalMoves(color){
+
+for(let r=0;r<8;r++){
+for(let c=0;c<8;c++){
+
+const piece = board[r][c];
+
+if(
+piece &&
+getColor(piece)===color
+){
+
+const moves =
+getLegalMoves(board,r,c);
+
+if(moves.length>0){
+return true;
+}
+
+}
+
+}
+}
+
+return false;
+}
+
+function promotePawn(){
+
+for(let c=0;c<8;c++){
+
+if(board[0][c]==="wp"){
+board[0][c]="wq";
+}
+
+if(board[7][c]==="bp"){
+board[7][c]="bq";
+}
+
+}
+
+}
+
+function updateStatus(){
+
+const current = turn;
+
+if(isCheck(board,current)){
+
+if(!hasLegalMoves(current)){
+
+gameOver = true;
+
+if(current==="white"){
+
+statusText.textContent =
+"SCHACKMATT! Röd vann!";
+
+}else{
+
+statusText.textContent =
+"SCHACKMATT! Blå vann!";
+}
+
+}else{
+
+statusText.textContent =
+"SCHACK!";
+}
+
+}else{
+
+if(current==="white"){
+
+statusText.textContent =
+"Blå spelar";
+
+}else{
+
+statusText.textContent =
+"Röd AI tänker...";
+}
+
+}
+
+}
+
+function drawBoard(){
+
+boardElement.innerHTML = "";
+
+for(let r=0;r<8;r++){
+for(let c=0;c<8;c++){
+
+const square =
+document.createElement("div");
+
+square.className =
+"square " +
+(
+(r+c)%2===0
+? "light"
+: "dark"
+);
+
+if(
+selected &&
+selected[0]===r &&
+selected[1]===c
+){
+square.classList.add(
+"selected"
+);
+}
+
+if(selected){
+
+const moves =
+getLegalMoves(
+board,
+selected[0],
+selected[1]
+);
+
+for(let move of moves){
+
+if(
+move[0]===r &&
+move[1]===c
+){
+square.classList.add(
+"move"
+);
+}
+
+}
+
+}
+
+const piece =
+board[r][c];
+
+if(piece){
+
+const div =
+document.createElement("div");
+
+div.className =
+"piece " +
+(
+piece[0]==="w"
+? "blue"
+: "red"
+);
+
+div.textContent =
+pieces[piece];
+
+square.appendChild(div);
+
+}
+
+square.onclick =
+()=>clickSquare(r,c);
+
+boardElement.appendChild(square);
+
+}
+}
+
+}
+
+function movePiece(fr,fc,tr,tc){
+
+board[tr][tc] =
+board[fr][fc];
+
+board[fr][fc] =
+null;
+
+promotePawn();
+
+selected = null;
+
+turn =
+turn==="white"
+? "black"
+: "white";
+
+drawBoard();
+
+updateStatus();
+
+if(
+!gameOver &&
+turn==="black"
+){
+
+setTimeout(
+aiMove,
+AI_SPEED
+);
+
+}
+
+}
+
+function clickSquare(r,c){
+
+if(gameOver) return;
+
+if(turn!=="white") return;
+
+const piece =
+board[r][c];
+
+if(selected){
+
+const [sr,sc] =
+selected;
+
+const moves =
+getLegalMoves(
+board,
+sr,
+sc
+);
+
+const valid =
+moves.find(
+m =>
+m[0]===r &&
+m[1]===c
+);
+
+if(valid){
+
+movePiece(
+sr,
+sc,
+r,
+c
+);
+
+return;
+}
+
+}
+
+if(
+piece &&
+getColor(piece)==="white"
+){
+
+selected = [r,c];
+
+}else{
+
+selected = null;
+}
+
+drawBoard();
+}
+
+function aiMove(){
+
+if(gameOver) return;
+
+const allMoves = [];
+
+for(let r=0;r<8;r++){
+for(let c=0;c<8;c++){
+
+const piece =
+board[r][c];
+
+if(
+piece &&
+getColor(piece)==="black"
+){
+
+const moves =
+getLegalMoves(
+board,
+r,
+c
+);
+
+for(let move of moves){
+
+allMoves.push({
+from:[r,c],
+to:move
+});
+
+}
+
+}
+
+}
+}
+
+if(allMoves.length===0){
+
+updateStatus();
+
+return;
+}
+
+const move =
+allMoves[
+Math.floor(
+Math.random()*
+allMoves.length
+)
+];
+
+const [fr,fc] =
+move.from;
+
+const [tr,tc] =
+move.to;
+
+movePiece(
+fr,
+fc,
+tr,
+tc
+);
+
+}
+
+</script>
+
+</body>
+</html>
