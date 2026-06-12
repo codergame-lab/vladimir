@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skyways Deluxe</title>
+
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+    font-family:Arial,sans-serif;
+}
+
+canvas{
+    display:block;
+    margin:auto;
+}
+
+#shop{
+    position:absolute;
+    top:50px;
+    left:10px;
+    background:white;
+    padding:10px;
+    border-radius:10px;
+    display:none;
+    z-index:10;
+}
+
+button{
+    width:180px;
+    margin:4px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="shop">
+<h3>SHOP</h3>
+
+<button onclick="buySpeed()">💨 Speed +1 (10)</button><br>
+<button onclick="buyLife()">❤️ Life (25)</button><br>
+<button onclick="buyShield()">🛡 Shield (30)</button><br>
+<button onclick="buyMultiplier()">💰 x2 Coins (50)</button><br>
+<button onclick="buyTurbo()">🚀 Turbo (75)</button><br>
+
+<p>Tryck M för att stänga</p>
+</div>
+
+<canvas id="game" width="1000" height="600"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let keys = {};
+
+let score = 0;
+let coins = 0;
+
+let shopOpen = false;
+
+let player = {
+    x:150,
+    y:300,
+    speed:5,
+    lives:3,
+    shield:false,
+    multiplier:1,
+    turbo:false
+};
+
+let clouds = [];
+let coinDrops = [];
+
+document.addEventListener("keydown",e=>{
+
+    keys[e.key]=true;
+
+    if(e.key==="m" || e.key==="M"){
+
+        shopOpen=!shopOpen;
+
+        document.getElementById("shop").style.display=
+        shopOpen ? "block":"none";
+    }
+});
+
+document.addEventListener("keyup",e=>{
+    keys[e.key]=false;
+});
+
+function buySpeed(){
+
+    if(coins>=10){
+        coins-=10;
+        player.speed++;
+    }
+}
+
+function buyLife(){
+
+    if(coins>=25){
+        coins-=25;
+        player.lives++;
+    }
+}
+
+function buyShield(){
+
+    if(coins>=30){
+        coins-=30;
+        player.shield=true;
+    }
+}
+
+function buyMultiplier(){
+
+    if(coins>=50){
+        coins-=50;
+        player.multiplier=2;
+    }
+}
+
+function buyTurbo(){
+
+    if(coins>=75){
+        coins-=75;
+        player.turbo=true;
+    }
+}
+
+function spawnCloud(){
+
+    clouds.push({
+        x:canvas.width+50,
+        y:Math.random()*550,
+        speed:4+Math.random()*3
+    });
+}
+
+function spawnCoin(){
+
+    coinDrops.push({
+        x:canvas.width+50,
+        y:50+Math.random()*500
+    });
+}
+
+function drawPlane(){
+
+    ctx.save();
+
+    ctx.shadowBlur=20;
+    ctx.shadowColor="red";
+
+    ctx.fillStyle="red";
+    ctx.fillRect(player.x,player.y,40,12);
+
+    ctx.fillRect(player.x+15,player.y-10,10,30);
+
+    ctx.restore();
+}
+
+function update(){
+
+    if(!shopOpen){
+
+        if(keys["ArrowUp"]||keys["w"])
+            player.y-=player.speed;
+
+        if(keys["ArrowDown"]||keys["s"])
+            player.y+=player.speed;
+    }
+
+    player.y=Math.max(0,Math.min(560,player.y));
+
+    if(Math.random()<0.02) spawnCloud();
+    if(Math.random()<0.015) spawnCoin();
+
+    clouds.forEach(c=>{
+
+        c.x-= player.turbo ? 8 : c.speed;
+
+        if(
+            player.x < c.x+60 &&
+            player.x+40 > c.x &&
+            player.y < c.y+30 &&
+            player.y+20 > c.y
+        ){
+
+            if(player.shield){
+
+                player.shield=false;
+
+            }else{
+
+                player.lives--;
+
+                c.x=-500;
+
+                if(player.lives<=0){
+
+                    alert("GAME OVER");
+
+                    location.reload();
+                }
+            }
+        }
+    });
+
+    coinDrops.forEach(c=>{
+
+        c.x-=4;
+
+        if(
+            player.x < c.x+10 &&
+            player.x+40 > c.x &&
+            player.y < c.y+10 &&
+            player.y+20 > c.y
+        ){
+
+            coins += player.multiplier;
+
+            c.x=-500;
+        }
+    });
+
+    clouds=clouds.filter(c=>c.x>-100);
+    coinDrops=coinDrops.filter(c=>c.x>-100);
+
+    score++;
+}
+
+function drawBackground(){
+
+    let g=ctx.createLinearGradient(0,0,0,600);
+
+    g.addColorStop(0,"#0f2027");
+    g.addColorStop(0.5,"#203a43");
+    g.addColorStop(1,"#2c5364");
+
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,1000,600);
+
+    for(let i=0;i<12;i++){
+
+        let x=(i*150)-(score%150);
+
+        ctx.fillStyle="#334455";
+
+        ctx.beginPath();
+        ctx.moveTo(x,600);
+        ctx.lineTo(x+75,350);
+        ctx.lineTo(x+150,600);
+        ctx.fill();
+    }
+}
+
+function draw(){
+
+    drawBackground();
+
+    drawPlane();
+
+    clouds.forEach(c=>{
+
+        ctx.fillStyle="white";
+
+        ctx.beginPath();
+        ctx.arc(c.x,c.y,20,0,Math.PI*2);
+        ctx.arc(c.x+20,c.y+5,25,0,Math.PI*2);
+        ctx.arc(c.x+40,c.y,20,0,Math.PI*2);
+        ctx.fill();
+    });
+
+    coinDrops.forEach(c=>{
+
+        ctx.fillStyle="gold";
+
+        ctx.beginPath();
+        ctx.arc(c.x,c.y,8,0,Math.PI*2);
+        ctx.fill();
+    });
+
+    ctx.fillStyle="white";
+    ctx.font="20px Arial";
+
+    ctx.fillText("Score: "+score,10,25);
+    ctx.fillText("Coins: "+coins,10,50);
+    ctx.fillText("Lives: "+player.lives,10,75);
+    ctx.fillText("Shield: "+(player.shield?"YES":"NO"),10,100);
+}
+
+function loop(){
+
+    update();
+    draw();
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+</body>
+</html>
