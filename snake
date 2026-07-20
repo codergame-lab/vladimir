@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Deluxe Jungle</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#0b2512;
+}
+
+#bg{
+    position:fixed;
+    inset:0;
+    background:
+        radial-gradient(circle at 20% 20%,rgba(255,255,255,.12),transparent 20%),
+        linear-gradient(#1b5e20,#0d3013);
+}
+
+#menu{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    color:white;
+    background:rgba(0,0,0,.35);
+    backdrop-filter:blur(3px);
+}
+
+h1{
+    font-size:60px;
+    color:#7dff8b;
+    text-shadow:0 0 20px #00ff66;
+}
+
+button{
+    margin-top:25px;
+    padding:15px 40px;
+    font-size:24px;
+    border:none;
+    border-radius:15px;
+    cursor:pointer;
+    background:#31d25c;
+    color:white;
+}
+
+#hud{
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:30px;
+    color:white;
+    font-size:24px;
+}
+
+canvas{
+    display:block;
+    margin:90px auto;
+    border-radius:25px;
+    border:5px solid #36ff6d;
+    box-shadow:
+    0 0 25px #00ff66,
+    inset 0 0 35px rgba(255,255,255,.15);
+}
+</style>
+</head>
+
+<body>
+
+<div id="bg"></div>
+
+<div id="hud">
+<div>Poäng: <span id="score">0</span></div>
+<div>Rekord: <span id="high">0</span></div>
+</div>
+
+<div id="menu">
+<h1>SNAKE</h1>
+<button onclick="startGame()">Starta</button>
+</div>
+
+<canvas id="game" width="640" height="640"></canvas>
+
+<script>
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const size=32;
+const cells=20;
+
+let snake=[];
+let dir={x:1,y:0};
+let berry={x:8,y:8};
+
+let running=false;
+let score=0;
+
+function reset(){
+
+snake=[
+{x:10,y:10},
+{x:9,y:10},
+{x:8,y:10}
+];
+
+dir={x:1,y:0};
+
+score=0;
+document.getElementById("score").textContent=0;
+
+spawnBerry();
+
+}
+
+function spawnBerry(){
+
+berry.x=Math.floor(Math.random()*cells);
+berry.y=Math.floor(Math.random()*cells);
+
+}
+
+function startGame(){
+document.addEventListener("keydown",e=>{
+
+if(e.key=="ArrowUp"&&dir.y==0){
+dir={x:0,y:-1};
+}
+
+if(e.key=="ArrowDown"&&dir.y==0){
+dir={x:0,y:1};
+}
+
+if(e.key=="ArrowLeft"&&dir.x==0){
+dir={x:-1,y:0};
+}
+
+if(e.key=="ArrowRight"&&dir.x==0){
+dir={x:1,y:0};
+}
+
+});
+document.getElementById("menu").style.display="none";
+
+running=true;
+
+reset();
+
+}
+
+function drawGrid(){
+
+ctx.fillStyle="rgba(255,255,255,.08)";
+
+for(let i=0;i<cells;i++){
+
+ctx.fillRect(i*size,0,1,640);
+
+ctx.fillRect(0,i*size,640,1);
+
+}
+
+}
+
+function draw(){
+
+ctx.clearRect(0,0,640,640);
+
+// Rutnät
+ctx.strokeStyle="rgba(255,255,255,.08)";
+for(let i=0;i<=cells;i++){
+    ctx.beginPath();
+    ctx.moveTo(i*size,0);
+    ctx.lineTo(i*size,640);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0,i*size);
+    ctx.lineTo(640,i*size);
+    ctx.stroke();
+}
+
+// Blåbär
+let bx=berry.x*size+size/2;
+let by=berry.y*size+size/2;
+
+let g=ctx.createRadialGradient(bx-3,by-3,2,bx,by,10);
+g.addColorStop(0,"#9fc3ff");
+g.addColorStop(.5,"#4a72ff");
+g.addColorStop(1,"#172d88");
+
+ctx.fillStyle=g;
+ctx.beginPath();
+ctx.arc(bx,by,10,0,Math.PI*2);
+ctx.fill();
+
+// Glans
+ctx.fillStyle="rgba(255,255,255,.5)";
+ctx.beginPath();
+ctx.arc(bx-3,by-3,3,0,Math.PI*2);
+ctx.fill();
+
+// Orm
+for(let i=snake.length-1;i>=0;i--){
+
+    let s=snake[i];
+
+    let x=s.x*size+size/2;
+    let y=s.y*size+size/2;
+
+    let body=ctx.createRadialGradient(x-4,y-4,2,x,y,12);
+
+    body.addColorStop(0,"#a8ff8f");
+    body.addColorStop(.5,"#45df5d");
+    body.addColorStop(1,"#12863b");
+
+    ctx.fillStyle=body;
+    ctx.beginPath();
+    ctx.arc(x,y,12,0,Math.PI*2);
+    ctx.fill();
+
+    if(i==0){
+
+        ctx.fillStyle="white";
+
+        ctx.beginPath();
+        ctx.arc(x-5,y-3,3,0,Math.PI*2);
+        ctx.arc(x+5,y-3,3,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle="black";
+
+        ctx.beginPath();
+        ctx.arc(x-5,y-3,1.5,0,Math.PI*2);
+        ctx.arc(x+5,y-3,1.5,0,Math.PI*2);
+        ctx.fill();
+
+    }
+
+}
+
+}
+
+ctx.clearRect(0,0,640,640);
+
+drawGrid();
+
+}
+
+function update(){
+let timer=0;
+
+function update(time){
+
+requestAnimationFrame(update);
+
+if(!running)return;
+
+if(time-timer<120)return;
+
+timer=time;
+
+let head={
+x:snake[0].x+dir.x,
+y:snake[0].y+dir.y
+};
+
+if(
+head.x<0||
+head.y<0||
+head.x>=cells||
+head.y>=cells||
+snake.some(s=>s.x==head.x&&s.y==head.y)
+){
+
+running=false;
+
+alert("Game Over!");
+
+document.getElementById("menu").style.display="flex";
+
+return;
+
+}
+
+snake.unshift(head);
+
+if(head.x==berry.x&&head.y==berry.y){
+
+score++;
+
+document.getElementById("score").textContent=score;
+
+spawnBerry();
+
+}else{
+
+snake.pop();
+
+}
+
+draw();
+
+}
+
+requestAnimationFrame(update);
+if(!running) return;
+
+draw();
+
+requestAnimationFrame(update);
+
+}
+
+requestAnimationFrame(update);
+
+</script>
+
+</body>
+</html>
