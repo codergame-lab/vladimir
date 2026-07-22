@@ -1,115 +1,333 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Snake Deluxe Jungle</title>
 
 <style>
+
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+margin:0;
+padding:0;
+box-sizing:border-box;
 }
 
 body{
-    overflow:hidden;
-    font-family:Arial,Helvetica,sans-serif;
-    background:#0b2512;
+
+overflow:hidden;
+font-family:Arial,Helvetica,sans-serif;
+
+background:
+linear-gradient(#0b3d1d,#072510);
+
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+
 }
 
-#bg{
-    position:fixed;
-    inset:0;
-    background:
-        radial-gradient(circle at 20% 20%,rgba(255,255,255,.12),transparent 20%),
-        linear-gradient(#1b5e20,#0d3013);
+/* Djungelbakgrund */
+
+#background{
+
+position:fixed;
+left:0;
+top:0;
+width:100%;
+height:100%;
+
+background:
+
+radial-gradient(circle at 20% 10%,rgba(255,255,255,.08),transparent 30%),
+
+radial-gradient(circle at 80% 20%,rgba(255,255,255,.06),transparent 35%),
+
+linear-gradient(#2e8b57,#145214);
+
+z-index:-2;
+
 }
 
-#menu{
-    position:absolute;
-    inset:0;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    color:white;
-    background:rgba(0,0,0,.35);
-    backdrop-filter:blur(3px);
+/* Dimma */
+
+#mist{
+
+position:fixed;
+
+left:0;
+top:0;
+
+width:100%;
+height:100%;
+
+background:
+linear-gradient(
+rgba(255,255,255,.05),
+rgba(255,255,255,0));
+
+z-index:-1;
+
+pointer-events:none;
+
 }
+
+/* Spelruta */
+
+#gameBox{
+
+width:720px;
+
+padding:20px;
+
+border-radius:24px;
+
+background:rgba(20,40,20,.45);
+
+backdrop-filter:blur(6px);
+
+border:4px solid #35ff78;
+
+box-shadow:
+
+0 0 30px #00ff66,
+
+inset 0 0 20px rgba(255,255,255,.15);
+
+}
+
+/* Titel */
 
 h1{
-    font-size:60px;
-    color:#7dff8b;
-    text-shadow:0 0 20px #00ff66;
+
+text-align:center;
+
+font-size:48px;
+
+color:white;
+
+letter-spacing:3px;
+
+text-shadow:
+
+0 0 20px #00ff88;
+
+margin-bottom:20px;
+
+}
+
+/* Info */
+
+#topBar{
+
+display:flex;
+
+justify-content:space-between;
+
+font-size:24px;
+
+color:white;
+
+margin-bottom:18px;
+
+}
+
+/* Canvas */
+
+canvas{
+
+display:block;
+
+margin:auto;
+
+background:rgba(0,0,0,.18);
+
+border-radius:18px;
+
+border:3px solid rgba(255,255,255,.25);
+
+}
+
+/* Meny */
+
+#menu{
+
+position:absolute;
+
+left:50%;
+
+top:50%;
+
+transform:translate(-50%,-50%);
+
+width:420px;
+
+padding:35px;
+
+border-radius:22px;
+
+background:rgba(0,0,0,.55);
+
+backdrop-filter:blur(10px);
+
+text-align:center;
+
+color:white;
+
+}
+
+#menu h2{
+
+font-size:40px;
+
+margin-bottom:25px;
+
 }
 
 button{
-    margin-top:25px;
-    padding:15px 40px;
-    font-size:24px;
-    border:none;
-    border-radius:15px;
-    cursor:pointer;
-    background:#31d25c;
-    color:white;
+
+padding:18px 45px;
+
+font-size:24px;
+
+border:none;
+
+border-radius:15px;
+
+cursor:pointer;
+
+background:#38d96d;
+
+color:white;
+
+transition:.25s;
+
 }
 
-#hud{
-    position:absolute;
-    top:20px;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    gap:30px;
-    color:white;
-    font-size:24px;
+button:hover{
+
+transform:scale(1.05);
+
+background:#4cff87;
+
 }
 
-canvas{
-    display:block;
-    margin:90px auto;
-    border-radius:25px;
-    border:5px solid #36ff6d;
-    box-shadow:
-    0 0 25px #00ff66,
-    inset 0 0 35px rgba(255,255,255,.15);
+#footer{
+
+margin-top:20px;
+
+text-align:center;
+
+color:#d7ffd7;
+
+font-size:18px;
+
 }
+
 </style>
+
 </head>
 
 <body>
 
-<div id="bg"></div>
+<div id="background"></div>
 
-<div id="hud">
-<div>Poäng: <span id="score">0</span></div>
-<div>Rekord: <span id="high">0</span></div>
+<div id="mist"></div>
+
+<div id="gameBox">
+
+<h1>🐍 Snake Deluxe Jungle</h1>
+
+<div id="topBar">
+
+<div>Poäng:
+<span id="score">0</span>
+</div>
+
+<div>Highscore:
+<span id="highscore">0</span>
+</div>
+
+</div>
+
+<canvas
+id="game"
+width="640"
+height="640">
+</canvas>
+
+<div id="footer">
+
+Piltangenter = Flytta • P = Paus
+
+</div>
+
 </div>
 
 <div id="menu">
-<h1>SNAKE</h1>
-<button onclick="startGame()">Starta</button>
-</div>
 
-<canvas id="game" width="640" height="640"></canvas>
+<h2>Start</h2>
+
+<p style="margin-bottom:25px;">
+
+Välkommen till Snake Deluxe Jungle!
+
+</p>
+
+<button id="startBtn">
+
+Starta Spelet
+
+</button>
+
+</div>
 
 <script>
 
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+// =========================================
 
-const size=32;
-const cells=20;
+// DEL 1B SKA KLISTRAS IN HÄR
 
-let snake=[];
-let dir={x:1,y:0};
-let berry={x:8,y:8};
+// =========================================
+// ===== Snake Deluxe Jungle - Del 1B =====
 
-let running=false;
-let score=0;
+// Canvas
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-function reset(){
+const GRID = 20;
+const CELL = canvas.width / GRID;
+
+// Speldata
+let snake = [];
+let direction = {x:1,y:0};
+let nextDirection = {x:1,y:0};
+
+let berry = {x:8,y:8};
+
+let score = 0;
+let highscore =
+Number(localStorage.getItem("snakeHighscore") || 0);
+
+document.getElementById("highscore").textContent = highscore;
+
+let running = false;
+let paused = false;
+
+// ======================
+
+function startGame(){
+
+document.getElementById("menu").style.display="none";
+
+running=true;
+paused=false;
+
+score=0;
+document.getElementById("score").textContent=0;
 
 snake=[
 {x:10,y:10},
@@ -117,188 +335,120 @@ snake=[
 {x:8,y:10}
 ];
 
-dir={x:1,y:0};
-
-score=0;
-document.getElementById("score").textContent=0;
+direction={x:1,y:0};
+nextDirection={x:1,y:0};
 
 spawnBerry();
 
 }
 
+document
+.getElementById("startBtn")
+.onclick=startGame;
+
+// ======================
+
 function spawnBerry(){
 
-berry.x=Math.floor(Math.random()*cells);
-berry.y=Math.floor(Math.random()*cells);
+do{
+
+berry.x=Math.floor(Math.random()*GRID);
+berry.y=Math.floor(Math.random()*GRID);
+
+}
+while(
+
+snake.some(s=>
+s.x===berry.x &&
+s.y===berry.y)
+
+);
 
 }
 
-function startGame(){
+// ======================
+
 document.addEventListener("keydown",e=>{
 
-if(e.key=="ArrowUp"&&dir.y==0){
-dir={x:0,y:-1};
-}
+if(e.key==="ArrowUp" && direction.y===0)
+nextDirection={x:0,y:-1};
 
-if(e.key=="ArrowDown"&&dir.y==0){
-dir={x:0,y:1};
-}
+if(e.key==="ArrowDown" && direction.y===0)
+nextDirection={x:0,y:1};
 
-if(e.key=="ArrowLeft"&&dir.x==0){
-dir={x:-1,y:0};
-}
+if(e.key==="ArrowLeft" && direction.x===0)
+nextDirection={x:-1,y:0};
 
-if(e.key=="ArrowRight"&&dir.x==0){
-dir={x:1,y:0};
-}
+if(e.key==="ArrowRight" && direction.x===0)
+nextDirection={x:1,y:0};
+
+if(e.key==="p"||e.key==="P")
+paused=!paused;
 
 });
-document.getElementById("menu").style.display="none";
 
-running=true;
-
-reset();
-
-}
-
-function drawGrid(){
-
-ctx.fillStyle="rgba(255,255,255,.08)";
-
-for(let i=0;i<cells;i++){
-
-ctx.fillRect(i*size,0,1,640);
-
-ctx.fillRect(0,i*size,640,1);
-
-}
-
-}
-
-function draw(){
-
-ctx.clearRect(0,0,640,640);
-
-// Rutnät
-ctx.strokeStyle="rgba(255,255,255,.08)";
-for(let i=0;i<=cells;i++){
-    ctx.beginPath();
-    ctx.moveTo(i*size,0);
-    ctx.lineTo(i*size,640);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0,i*size);
-    ctx.lineTo(640,i*size);
-    ctx.stroke();
-}
-
-// Blåbär
-let bx=berry.x*size+size/2;
-let by=berry.y*size+size/2;
-
-let g=ctx.createRadialGradient(bx-3,by-3,2,bx,by,10);
-g.addColorStop(0,"#9fc3ff");
-g.addColorStop(.5,"#4a72ff");
-g.addColorStop(1,"#172d88");
-
-ctx.fillStyle=g;
-ctx.beginPath();
-ctx.arc(bx,by,10,0,Math.PI*2);
-ctx.fill();
-
-// Glans
-ctx.fillStyle="rgba(255,255,255,.5)";
-ctx.beginPath();
-ctx.arc(bx-3,by-3,3,0,Math.PI*2);
-ctx.fill();
-
-// Orm
-for(let i=snake.length-1;i>=0;i--){
-
-    let s=snake[i];
-
-    let x=s.x*size+size/2;
-    let y=s.y*size+size/2;
-
-    let body=ctx.createRadialGradient(x-4,y-4,2,x,y,12);
-
-    body.addColorStop(0,"#a8ff8f");
-    body.addColorStop(.5,"#45df5d");
-    body.addColorStop(1,"#12863b");
-
-    ctx.fillStyle=body;
-    ctx.beginPath();
-    ctx.arc(x,y,12,0,Math.PI*2);
-    ctx.fill();
-
-    if(i==0){
-
-        ctx.fillStyle="white";
-
-        ctx.beginPath();
-        ctx.arc(x-5,y-3,3,0,Math.PI*2);
-        ctx.arc(x+5,y-3,3,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle="black";
-
-        ctx.beginPath();
-        ctx.arc(x-5,y-3,1.5,0,Math.PI*2);
-        ctx.arc(x+5,y-3,1.5,0,Math.PI*2);
-        ctx.fill();
-
-    }
-
-}
-
-}
-
-ctx.clearRect(0,0,640,640);
-
-drawGrid();
-
-}
+// ======================
 
 function update(){
-let timer=0;
 
-function update(time){
+if(!running) return;
 
-requestAnimationFrame(update);
+if(paused) return;
 
-if(!running)return;
-
-if(time-timer<120)return;
-
-timer=time;
+direction=nextDirection;
 
 let head={
-x:snake[0].x+dir.x,
-y:snake[0].y+dir.y
+
+x:snake[0].x+direction.x,
+
+y:snake[0].y+direction.y
+
 };
 
+// Vägg
+
 if(
+
 head.x<0||
 head.y<0||
-head.x>=cells||
-head.y>=cells||
-snake.some(s=>s.x==head.x&&s.y==head.y)
+head.x>=GRID||
+head.y>=GRID
+
 ){
 
-running=false;
-
-alert("Game Over!");
-
-document.getElementById("menu").style.display="flex";
-
+gameOver();
 return;
 
 }
 
+// Krock med sig själv
+
+for(let s of snake){
+
+if(
+s.x===head.x &&
+s.y===head.y
+){
+
+gameOver();
+return;
+
+}
+
+}
+
+// Nytt huvud
+
 snake.unshift(head);
 
-if(head.x==berry.x&&head.y==berry.y){
+// Äta blåbär
+
+if(
+
+head.x===berry.x &&
+head.y===berry.y
+
+){
 
 score++;
 
@@ -312,21 +462,316 @@ snake.pop();
 
 }
 
-draw();
+}
+
+// ======================
+
+function gameOver(){
+
+running=false;
+
+if(score>highscore){
+
+highscore=score;
+
+localStorage.setItem(
+"snakeHighscore",
+highscore
+);
+
+document.getElementById("highscore").textContent=highscore;
 
 }
 
-requestAnimationFrame(update);
-if(!running) return;
+alert("Game Over!\nPoäng: "+score);
 
-draw();
-
-requestAnimationFrame(update);
+document.getElementById("menu").style.display="block";
 
 }
 
-requestAnimationFrame(update);
+// ======================
 
+function gameLoop(){
+
+    update();
+
+    draw();
+
+    requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
+
+
+// ===============================
+// DEL 1C-1
+// Djungelbakgrund + ritfunktion
+// ===============================
+
+function drawBackground(){
+
+// Mörk djungel
+let g = ctx.createLinearGradient(0,0,0,640);
+
+g.addColorStop(0,"#2f8f46");
+g.addColorStop(.5,"#216a38");
+g.addColorStop(1,"#143d20");
+
+ctx.fillStyle=g;
+ctx.fillRect(0,0,640,640);
+
+// Solstrålar
+for(let i=0;i<6;i++){
+
+ctx.fillStyle="rgba(255,255,180,.05)";
+
+ctx.beginPath();
+
+ctx.moveTo(i*110,0);
+ctx.lineTo(i*110+70,640);
+ctx.lineTo(i*110+130,640);
+
+ctx.closePath();
+
+ctx.fill();
+
+}
+
+// Rutnät
+
+ctx.strokeStyle="rgba(255,255,255,.08)";
+ctx.lineWidth=1;
+
+for(let i=0;i<=GRID;i++){
+
+ctx.beginPath();
+ctx.moveTo(i*CELL,0);
+ctx.lineTo(i*CELL,640);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(0,i*CELL);
+ctx.lineTo(640,i*CELL);
+ctx.stroke();
+
+}
+
+// Trädstammar
+
+ctx.fillStyle="#3a2816";
+
+for(let i=0;i<8;i++){
+
+ctx.fillRect(i*90+20,0,12,640);
+
+}
+
+// Blad
+
+for(let i=0;i<120;i++){
+
+let x=(i*53)%640;
+let y=(i*91)%640;
+
+ctx.fillStyle="rgba(30,120,40,.35)";
+
+ctx.beginPath();
+
+ctx.arc(x,y,8,0,Math.PI*2);
+
+ctx.fill();
+
+}
+
+}
+
+// ===============================
+
+function draw(){
+
+drawBackground();
+
+let bx = berry.x * CELL + CELL / 2;
+let by = berry.y * CELL + CELL / 2;
+
+// Studsanimation
+by += Math.sin(Date.now()/180)*2;
+
+// Skugga
+ctx.fillStyle="rgba(0,0,0,.25)";
+ctx.beginPath();
+ctx.ellipse(bx,by+8,9,4,0,0,Math.PI*2);
+ctx.fill();
+
+// Blåbär
+let berryGrad=ctx.createRadialGradient(
+bx-4,by-4,2,
+bx,by,12
+);
+
+berryGrad.addColorStop(0,"#b8d4ff");
+berryGrad.addColorStop(.4,"#5a82ff");
+berryGrad.addColorStop(1,"#1d2c88");
+
+ctx.fillStyle=berryGrad;
+ctx.beginPath();
+ctx.arc(bx,by,11,0,Math.PI*2);
+ctx.fill();
+
+// Glans
+ctx.fillStyle="rgba(255,255,255,.55)";
+ctx.beginPath();
+ctx.arc(bx-4,by-4,3,0,Math.PI*2);
+ctx.fill();
+
+// ===== Rita ormen =====
+
+for(let i=snake.length-1;i>=0;i--){
+
+let s=snake[i];
+
+let x=s.x*CELL+CELL/2;
+let y=s.y*CELL+CELL/2;
+
+// Skugga
+ctx.fillStyle="rgba(0,0,0,.22)";
+ctx.beginPath();
+ctx.arc(x,y+3,11,0,Math.PI*2);
+ctx.fill();
+
+// Kropp
+let body=ctx.createRadialGradient(
+x-4,y-4,2,
+x,y,13
+);
+
+body.addColorStop(0,"#caffb3");
+body.addColorStop(.4,"#53ef67");
+body.addColorStop(1,"#16863b");
+
+ctx.fillStyle=body;
+
+ctx.beginPath();
+ctx.arc(x,y,12,0,Math.PI*2);
+ctx.fill();
+
+// Huvud
+if(i===0){
+
+ctx.fillStyle="white";
+
+ctx.beginPath();
+ctx.arc(x-5,y-4,3.2,0,Math.PI*2);
+ctx.arc(x+5,y-4,3.2,0,Math.PI*2);
+ctx.fill();
+
+// Pupiller
+
+let px=0;
+let py=0;
+
+if(direction.x===1) px=1.5;
+if(direction.x===-1) px=-1.5;
+if(direction.y===1) py=1.5;
+if(direction.y===-1) py=-1.5;
+
+ctx.fillStyle="black";
+
+ctx.beginPath();
+
+ctx.arc(x-5+px,y-4+py,1.3,0,Math.PI*2);
+ctx.arc(x+5+px,y-4+py,1.3,0,Math.PI*2);
+
+ctx.fill();
+
+// Tunga
+
+ctx.strokeStyle="#ff4b6e";
+ctx.lineWidth=2;
+
+ctx.beginPath();
+
+ctx.moveTo(x,y+2);
+ctx.lineTo(
+x+direction.x*8,
+y+direction.y*8
+);
+
+ctx.stroke();
+
+}
+
+}
+
+// ===== Slut Del 1C-2 =====
+
+}
+
+ // ===================================
+// DEL 1C-3
+// Partiklar
+// ===================================
+
+const particles=[];
+
+function createParticles(x,y){
+
+    for(let i=0;i<15;i++){
+
+        particles.push({
+
+            x:x,
+            y:y,
+
+            vx:(Math.random()-0.5)*4,
+            vy:(Math.random()-0.5)*4,
+
+            size:2+Math.random()*3,
+
+            life:30
+
+        });
+
+    }
+
+}
+
+function updateParticles(){
+
+    for(let i=particles.length-1;i>=0;i--){
+
+        let p=particles[i];
+
+        p.x+=p.vx;
+        p.y+=p.vy;
+
+        p.life--;
+
+        ctx.fillStyle="rgba(255,255,255,"+(p.life/30)+")";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            p.size,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+        if(p.life<=0){
+
+            particles.splice(i,1);
+
+        }
+
+    }
+
+}   
+    
 </script>
 
 </body>
