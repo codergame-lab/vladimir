@@ -174,17 +174,26 @@ document.addEventListener("keydown", function(e){
 
 });
 
-
-// Kontrollera koden
 function checkCode(){
 
-    let code = document.getElementById("secretInput").value;
+    let code = document.getElementById("secretInput").value.toUpperCase();
 
-    if(code.toUpperCase() === "VLAD"){
+
+    if(code === "VLAD"){
 
         window.location.href="hemlig sida.html";
 
-    } else {
+    }
+
+
+    else if(code === "MATTE"){
+
+        window.location.href="matte sida.html";
+
+    }
+
+
+    else{
 
         alert("❌ Fel kod!");
 
