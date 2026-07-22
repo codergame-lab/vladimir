@@ -388,13 +388,21 @@ paused=!paused;
 });
 
 // ======================
+    
+let lastMove = 0;
+const MOVE_DELAY = 120; // högre värde = långsammare orm
 
-function update(){
+    function update(){
 
 if(!running) return;
 
 if(paused) return;
 
+const now = Date.now();
+
+if(now - lastMove < MOVE_DELAY) return;
+
+lastMove = now;
 direction=nextDirection;
 
 let head={
