@@ -112,6 +112,86 @@ footer{
         ▶ Spela nu
     </a>
 </div>
+
+ <style>
+#secretBox {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#222;
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 0 30px black;
+    text-align:center;
+    font-family:Arial;
+    z-index:9999;
+}
+
+#secretBox input {
+    font-size:20px;
+    padding:10px;
+    text-align:center;
+    width:150px;
+}
+
+#secretBox button {
+    margin-top:15px;
+    padding:10px 20px;
+    cursor:pointer;
+}
+</style>
+
+
+<div id="secretBox">
+    <h2>🔒 Hemlig kod</h2>
+    <p>Skriv koden för att öppna den hemliga sidan</p>
+
+    <input id="secretInput" type="password">
+    <br>
+
+    <button onclick="checkCode()">Öppna</button>
+</div>
+
+
+<script>
+
+document.addEventListener("keydown", function(e){
+
+    // Tryck G för att öppna kodrutan
+    if(e.key.toLowerCase() === "g"){
+
+        document.getElementById("secretBox").style.display="block";
+
+        document.getElementById("secretInput").focus();
+
+    }
+
+});
+
+
+function checkCode(){
+
+    let code = document.getElementById("secretInput").value;
+
+    if(code.toUpperCase() === "VLAD"){
+
+        window.location.href="hemlig.html";
+
+    } else {
+
+        alert("❌ Fel kod!");
+
+        document.getElementById("secretInput").value="";
+
+    }
+
+}
+
+</script>   
+    
 <footer>
     Skapad av Vladimir © 2026
 </footer>
