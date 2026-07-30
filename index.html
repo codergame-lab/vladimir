@@ -1,213 +1,789 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vladimirs Spelsajt</title>
-
+<title>Cube Dash</title>
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    text-align:center;
-    background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
-    color:white;
-}
-
-header{
-    padding:60px 20px;
-}
-
-h1{
-    font-size:4em;
-    margin-bottom:10px;
-}
-
-.tagline{
-    font-size:1.3em;
-    opacity:0.9;
-}
-
-.game-card{
-    margin:30px auto;
-    max-width:500px;
-    background:rgba(255,255,255,0.1);
-    border-radius:20px;
-    padding:30px;
-}
-
-.play-button{
-    display:inline-block;
-    margin-top:20px;
-    padding:15px 30px;
-    background:#ffd700;
-    color:black;
-    text-decoration:none;
-    font-weight:bold;
-    border-radius:12px;
-    font-size:1.2em;
-}
-
-.play-button:hover{
-    transform:scale(1.05);
-}
-
-footer{
-    margin-top:60px;
-    padding:20px;
-    opacity:0.7;
-}
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #0b0b1a;
+    overflow: hidden;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    user-select: none;
+  }
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 0 60px rgba(80, 40, 200, 0.35);
+    cursor: pointer;
+  }
 </style>
 </head>
-
 <body>
-
-<header>
-    <h1>🎮 Vladimirs Spelsajt 🎮</h1>
-    <p class="tagline">
-        Välkommen till min värld av spel, äventyr och utmaningar!
-    </p>
-</header>
-
-<div class="game-card">
-    <h2>🕹️ Platformer Deluxe</h2>
-    <p>
-        Spring, hoppa och ta dig igenom banorna i mitt första spel!
-    </p>
-
-    <a class="play-button" href="platformer deluxe spel.html">
-        ▶ Spela nu
-    </a>
-</div>
-
-<div class="game-card">
-    <h2>🥷 Ninja Chess</h2>
-    <p>
-        Utmana ninja-AI:n i ett episkt schackspel!
-    </p>
-
-    <a class="play-button" href="ninja chess.html">
-        ▶ Spela nu
-    </a>
-</div>
-
-<div class="game-card">
-    <h2>✈️ Skyways</h2>
-    <p>
-        Flyg genom himlen, samla poäng och undvik hinder!
-    </p>
-
-    <a class="play-button" href="skyways.html">
-        ▶ Spela nu
-    </a>
-</div>
-
-    <div class="game-card">
-    <h2>🐍Snake</h2>
-    <p>
-        åla, ät blåbär, bli längre!
-    </p>
-
-    <a class="play-button" href="snake.html">
-        ▶ Spela nu
-    </a>
-</div>
-<footer>
-    Skapad av Vladimir © 2026
-</footer>
-<style>
-#secretBox{
-    display:none;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    background:#222;
-    color:white;
-    padding:30px;
-    border-radius:15px;
-    text-align:center;
-    z-index:9999;
-}
-
-#secretInput{
-    font-size:20px;
-    padding:10px;
-    width:150px;
-    text-align:center;
-}
-
-button{
-    margin-top:15px;
-    padding:10px 20px;
-    cursor:pointer;
-}
-</style>
-
-
-<div id="secretBox">
-
-    <h2>🔒 Hemlig kod</h2>
-
-    <p>Skriv koden:</p>
-
-    <input id="secretInput" type="password">
-
-    <br>
-
-    <button onclick="checkCode()">Öppna</button>
-
-</div>
-
-
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
 <script>
+"use strict";
 
-// Öppna rutan med G
-document.addEventListener("keydown", function(e){
+// ---------- Setup ----------
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
 
-    if(e.key.toLowerCase() === "g"){
+const TILE = 48;                 // world tile size in px
+const GROUND_Y = H - 90;         // top of the ground strip
+const SPEED = 372;               // horizontal scroll speed, px/s
+const GRAVITY = 4400;            // tuned so one jump covers ~3.5 tiles
+const JUMP_V = -990;             // apex ~2.3 tiles, airtime 0.45s
+const PLAYER_SIZE = 40;
+const START_X = 3 * TILE;        // where the cube spawns = musical bar 0, beat 0
 
-        document.getElementById("secretBox").style.display="block";
-        document.getElementById("secretInput").focus();
+// ---------- Level ----------
+// Grid map, drawn bottom row = ground level. Characters:
+//   . empty   ^ spike   # block   - short spike (half height)
+// Each string is one row; rows are stacked upward from the ground.
+// Rows are written in 10-column chunks so positions are easy to count.
+const ROW2 = [ // height-2 row: platform tops and a spike-on-block tower
+  "..........", "..........", "..........", "..........", "..........",
+  "..........", "..........", "..........", ".###.^....", "..........",
+  "..........", "..........", "..........",
+].join("");
+const ROW1 = [ // ground row
+  "..........", "..^....^..", "..^^...#..", "..^...^^..", "..###^^...",
+  ".^...^^...", "##^^^.....", "^...^^...#", "####.#....", "^...^^..##",
+  "^^^.....^.", "...^....^^", "....^^....",
+].join("");
+const LEVEL_ROWS = [ROW2, ROW1];
 
-    }
+const FINISH_PAD = 10; // empty tiles after last obstacle before the finish line
 
-});
+// Parse grid into obstacle lists
+const spikes = [];   // {x, y, w, h}  (triangle, base at y+h)
+const blocks = [];   // {x, y, w, h}
+const levelCols = Math.max(...LEVEL_ROWS.map(r => r.length));
 
-function checkCode(){
-
-    let code = document.getElementById("secretInput").value.toUpperCase();
-
-
-    if(code === "VLAD"){
-
-        window.location.href="hemlig sida.html";
-
-    }
-
-
-    else if(code === "MATTE"){
-
-        window.location.href="matte sida.html";
-
-    }
-
-         else if(code === "Star Wars"){
-
-        window.location.href="Star Wars.html";
-
- }
-             
-    else{
-
-        alert("❌ Fel kod!");
-
-        document.getElementById("secretInput").value="";
-
-    }
-
+for (let row = 0; row < LEVEL_ROWS.length; row++) {
+  const str = LEVEL_ROWS[LEVEL_ROWS.length - 1 - row]; // bottom row first
+  for (let col = 0; col < str.length; col++) {
+    const ch = str[col];
+    if (ch === "." || ch === undefined) continue;
+    const x = col * TILE;
+    const y = GROUND_Y - (row + 1) * TILE;
+    if (ch === "#") blocks.push({ x, y, w: TILE, h: TILE });
+    else if (ch === "^") spikes.push({ x, y, w: TILE, h: TILE });
+    else if (ch === "-") spikes.push({ x, y: y + TILE / 2, w: TILE, h: TILE / 2 });
+  }
 }
 
+const LEVEL_LENGTH = (levelCols + FINISH_PAD) * TILE;
+
+// ---------- State ----------
+const S_READY = 0, S_PLAY = 1, S_DEAD = 2, S_WIN = 3;
+
+let state = S_READY;
+let attempts = 1;
+let bestProgress = parseFloat(localStorage.getItem("cubedash_best") || "0");
+
+const player = { x: 0, y: 0, vy: 0, rot: 0, onGround: true };
+let camX = 0;
+let deadTimer = 0;
+let inputHeld = false;
+let particles = [];
+let shake = 0;
+let beatPulse = 0;        // 1 on the beat, decaying to 0 — drives visuals
+let musicEnabled = true;  // off only when scripts step the physics headlessly
+
+function reset() {
+  player.x = START_X;
+  player.y = GROUND_Y - PLAYER_SIZE;
+  player.vy = 0;
+  player.rot = 0;
+  player.onGround = true;
+  camX = 0;
+  particles = [];
+  shake = 0;
+}
+reset();
+
+// ---------- Audio ----------
+// The soundtrack is generated from the level position, not from wall-clock
+// time: one beat is a fixed number of tiles, so bar N always lands on the same
+// stretch of level. Restart after a death and the music restarts in lockstep.
+const TILES_PER_BEAT = 4;
+const PX_PER_BEAT = TILE * TILES_PER_BEAT;       // 192 px
+const PX_PER_STEP = PX_PER_BEAT / 4;             // 16th note = 1 tile
+const SEC_PER_BEAT = PX_PER_BEAT / SPEED;        // ~0.516s => ~116 BPM
+const SEC_PER_STEP = SEC_PER_BEAT / 4;
+const LOOKAHEAD_STEPS = 6;                       // schedule ~0.8s ahead
+
+// Level position -> musical position
+function songStep(x) { return (x - START_X) / PX_PER_STEP; }
+function songBeat(x) { return (x - START_X) / PX_PER_BEAT; }
+
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+
+// vi - IV - I - V in A minor, one chord per bar, looping
+const CHORDS = [
+  { bass: 45, notes: [57, 60, 64] }, // Am
+  { bass: 41, notes: [53, 57, 60] }, // F
+  { bass: 48, notes: [60, 64, 67] }, // C
+  { bass: 43, notes: [55, 59, 62] }, // G
+];
+
+// Lead hook: one 16-step pattern per bar of the progression (-1 = rest)
+const LEAD = [
+  { 0: 69, 3: 72, 6: 76, 8: 74, 11: 72, 14: 69 },
+  { 0: 65, 3: 69, 6: 72, 8: 77, 11: 76, 14: 72 },
+  { 0: 67, 3: 72, 6: 76, 8: 79, 11: 76, 14: 72 },
+  { 0: 67, 2: 71, 4: 74, 6: 79, 8: 81, 10: 79, 12: 76, 14: 74 },
+];
+
+const Music = {
+  ctx: null,
+  master: null,   // global volume + mute
+  bus: null,      // current take; replaced on restart so stale notes can't bleed
+  sfx: null,
+  noiseBuf: null,
+  nextStep: 0,
+  muted: localStorage.getItem("cubedash_muted") === "1",
+
+  init() {
+    if (this.ctx) {
+      if (this.ctx.state === "suspended") this.ctx.resume();
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      this.ctx = new AC();
+    } catch (e) { return; }
+
+    this.master = this.ctx.createGain();
+    this.master.gain.value = this.muted ? 0 : 0.9;
+    this.master.connect(this.ctx.destination);
+
+    this.sfx = this.ctx.createGain();
+    this.sfx.gain.value = 1;
+    this.sfx.connect(this.master);
+
+    // one shared noise buffer for hats and snares
+    const len = Math.floor(this.ctx.sampleRate * 0.4);
+    this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = this.noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+
+    this.newBus();
+  },
+
+  newBus() {
+    if (!this.ctx) return;
+    this.bus = this.ctx.createGain();
+    this.bus.gain.value = 1;
+    this.bus.connect(this.master);
+  },
+
+  // Fade out whatever is already queued, then start a fresh bus for the retry
+  stop() {
+    if (!this.ctx || !this.bus) return;
+    const old = this.bus;
+    const t = this.ctx.currentTime;
+    old.gain.setValueAtTime(old.gain.value, t);
+    old.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    setTimeout(() => { try { old.disconnect(); } catch (e) {} }, 400);
+    this.newBus();
+    this.nextStep = 0;
+  },
+
+  restart() {
+    this.stop();
+  },
+
+  toggleMute() {
+    this.muted = !this.muted;
+    localStorage.setItem("cubedash_muted", this.muted ? "1" : "0");
+    if (this.master) {
+      const t = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(t);
+      this.master.gain.setValueAtTime(this.master.gain.value, t);
+      this.master.gain.linearRampToValueAtTime(this.muted ? 0 : 0.9, t + 0.12);
+    }
+  },
+
+  // ----- voices -----
+  tone(freq, time, dur, type, gain, detune = 0, bus) {
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, time);
+    if (detune) o.detune.setValueAtTime(detune, time);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(gain, time + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(g).connect(bus || this.bus);
+    o.start(time);
+    o.stop(time + dur + 0.02);
+  },
+
+  kick(time) {
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(170, time);
+    o.frequency.exponentialRampToValueAtTime(45, time + 0.11);
+    g.gain.setValueAtTime(0.55, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+    o.connect(g).connect(this.bus);
+    o.start(time);
+    o.stop(time + 0.24);
+  },
+
+  noise(time, dur, gain, hp) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    const f = this.ctx.createBiquadFilter();
+    f.type = "highpass";
+    f.frequency.value = hp;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(gain, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    src.connect(f).connect(g).connect(this.bus);
+    src.start(time);
+    src.stop(time + dur + 0.02);
+  },
+
+  // ----- arrangement: what plays on a given 16th-note step -----
+  scheduleStep(step, time) {
+    const bar = Math.floor(step / 16);
+    const s = ((step % 16) + 16) % 16;
+    const chord = CHORDS[bar % CHORDS.length];
+
+    // drums: four-on-the-floor, snare on 2 and 4, offbeat hats
+    if (s % 4 === 0) this.kick(time);
+    if (bar >= 1 && (s === 4 || s === 12)) this.noise(time, 0.16, 0.22, 1200);
+    if (s % 2 === 1) this.noise(time, 0.045, bar >= 1 ? 0.10 : 0.06, 7000);
+
+    // bass: driving 8ths with an octave lift late in the bar
+    if (s % 2 === 0) {
+      const oct = (s === 6 || s === 14) ? 12 : 0;
+      this.tone(midi(chord.bass + oct), time, 0.19, "square", 0.16);
+      this.tone(midi(chord.bass + oct - 12), time, 0.22, "triangle", 0.13);
+    }
+
+    // lead: holds off for the first two bars so the level opens with a build
+    if (bar >= 2) {
+      const note = LEAD[bar % LEAD.length][s];
+      if (note !== undefined) {
+        this.tone(midi(note), time, 0.30, "square", 0.075, -7);
+        this.tone(midi(note), time, 0.30, "square", 0.075, +7);
+      }
+    }
+
+    // arpeggio sparkle once the level gets busy
+    if (bar >= 4 && s % 2 === 1) {
+      const n = chord.notes[((s - 1) / 2) % chord.notes.length] + 12;
+      this.tone(midi(n), time, 0.09, "square", 0.035);
+    }
+  },
+
+  // Called every frame while playing: converts level position into audio time
+  update() {
+    if (!this.ctx || !this.bus || this.ctx.state !== "running") return;
+    const cur = songStep(player.x);
+    if (this.nextStep < cur) this.nextStep = Math.ceil(cur);
+    const now = this.ctx.currentTime;
+    while (this.nextStep < cur + LOOKAHEAD_STEPS) {
+      if (this.nextStep * PX_PER_STEP + START_X > LEVEL_LENGTH) break;
+      this.scheduleStep(this.nextStep, now + (this.nextStep - cur) * SEC_PER_STEP);
+      this.nextStep++;
+    }
+  },
+
+  // Jump/crash sounds, pitched to the chord under the player so they sit in key
+  chordNow() {
+    return CHORDS[Math.floor(Math.max(0, songBeat(player.x)) / 4) % CHORDS.length];
+  },
+};
+
+// SFX helper, kept on the same context as the music
+function beep(freq, dur, type = "square", vol = 0.06) {
+  const M = Music;
+  if (!M.ctx || !M.sfx) return;
+  try {
+    const o = M.ctx.createOscillator();
+    const g = M.ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, M.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, M.ctx.currentTime + dur);
+    o.connect(g).connect(M.sfx);
+    o.start();
+    o.stop(M.ctx.currentTime + dur);
+  } catch (e) { /* audio unavailable */ }
+}
+
+// ---------- Input ----------
+function press() {
+  Music.init(); // AudioContext must be created from a user gesture
+  if (state === S_READY) {
+    Music.restart();
+    state = S_PLAY;
+  } else if (state === S_DEAD || state === S_WIN) {
+    if (deadTimer <= 0) {
+      if (state === S_DEAD) attempts++;
+      else attempts = 1;
+      reset();
+      Music.restart();
+      state = S_PLAY;
+    }
+  }
+  inputHeld = true;
+}
+function release() { inputHeld = false; }
+
+window.addEventListener("keydown", e => {
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
+    e.preventDefault();
+    if (!e.repeat) press();
+    inputHeld = true;
+  }
+});
+window.addEventListener("keyup", e => {
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") release();
+  if (e.code === "KeyM") { Music.init(); Music.toggleMute(); }
+});
+canvas.addEventListener("pointerdown", e => { e.preventDefault(); press(); });
+window.addEventListener("pointerup", release);
+window.addEventListener("blur", release);
+
+// ---------- Collision helpers ----------
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+// Spike hitbox is smaller than the drawn triangle so deaths feel fair
+function spikeHitbox(s) {
+  return { x: s.x + s.w * 0.30, y: s.y + s.h * 0.42, w: s.w * 0.40, h: s.h * 0.58 };
+}
+
+function die() {
+  state = S_DEAD;
+  deadTimer = 0.55;
+  shake = 12;
+  Music.stop();
+  const p = bestProgress;
+  const prog = Math.min(1, player.x / LEVEL_LENGTH);
+  if (prog > p) {
+    bestProgress = prog;
+    localStorage.setItem("cubedash_best", String(bestProgress));
+  }
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 150 + Math.random() * 420;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 150,
+      life: 0.5 + Math.random() * 0.5,
+      size: 3 + Math.random() * 5,
+      color: Math.random() < 0.5 ? "#37f0ff" : "#ffdd30",
+    });
+  }
+  beep(110, 0.25, "sawtooth", 0.1);
+  setTimeout(() => beep(70, 0.3, "sawtooth", 0.08), 60);
+}
+
+function win() {
+  state = S_WIN;
+  deadTimer = 0.4;
+  Music.stop();
+  bestProgress = 1;
+  localStorage.setItem("cubedash_best", "1");
+  const cy = player.y + PLAYER_SIZE / 2;
+  for (let i = 0; i < 70; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 100 + Math.random() * 380;
+    particles.push({
+      x: player.x + PLAYER_SIZE / 2, y: cy,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 200,
+      life: 0.7 + Math.random() * 0.8,
+      size: 3 + Math.random() * 6,
+      color: ["#37f0ff", "#ffdd30", "#ff4fd8", "#7cff4f"][i % 4],
+    });
+  }
+  beep(523, 0.15, "square", 0.07);
+  setTimeout(() => beep(659, 0.15, "square", 0.07), 130);
+  setTimeout(() => beep(784, 0.3, "square", 0.07), 260);
+}
+
+// ---------- Update ----------
+function update(dt) {
+  if (state === S_DEAD || state === S_WIN) {
+    deadTimer -= dt;
+  }
+
+  if (state === S_PLAY) {
+    player.x += SPEED * dt;
+    if (musicEnabled) Music.update();
+
+    // jump (held input = auto-jump on landing, like GD)
+    if (inputHeld && player.onGround) {
+      player.vy = JUMP_V;
+      player.onGround = false;
+      // jump chirp uses a note from the chord playing right now
+      beep(midi(Music.chordNow().notes[2] + 12), 0.08, "square", 0.03);
+      // little dust burst
+      for (let i = 0; i < 5; i++) {
+        particles.push({
+          x: player.x + PLAYER_SIZE / 2, y: player.y + PLAYER_SIZE,
+          vx: -60 - Math.random() * 90, vy: -Math.random() * 60,
+          life: 0.3, size: 2 + Math.random() * 3, color: "#8fd8ff",
+        });
+      }
+    }
+
+    player.vy += GRAVITY * dt;
+    player.y += player.vy * dt;
+
+    const wasGrounded = player.onGround;
+    player.onGround = false;
+
+    // ground
+    if (player.y + PLAYER_SIZE >= GROUND_Y) {
+      player.y = GROUND_Y - PLAYER_SIZE;
+      player.vy = 0;
+      player.onGround = true;
+    }
+
+    // blocks: land on top, die on side hit
+    const pb = { x: player.x + 4, y: player.y + 2, w: PLAYER_SIZE - 8, h: PLAYER_SIZE - 2 };
+    for (const b of blocks) {
+      if (b.x > player.x + 400 || b.x + b.w < player.x - 100) continue;
+      if (!rectsOverlap(pb, b)) continue;
+      const prevBottom = pb.y + pb.h - player.vy * dt;
+      if (player.vy >= 0 && prevBottom <= b.y + 14) {
+        player.y = b.y - PLAYER_SIZE;
+        player.vy = 0;
+        player.onGround = true;
+      } else {
+        die();
+        break;
+      }
+    }
+
+    // rotation: spin in air, snap to 90° on ground
+    if (!player.onGround) {
+      player.rot += dt * 7.0; // ~half a turn per jump
+    } else {
+      const target = Math.round(player.rot / (Math.PI / 2)) * (Math.PI / 2);
+      player.rot += (target - player.rot) * Math.min(1, dt * 25);
+      if (!wasGrounded) {
+        // landing dust
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: player.x + Math.random() * PLAYER_SIZE, y: player.y + PLAYER_SIZE,
+            vx: -40 - Math.random() * 80, vy: -20 - Math.random() * 50,
+            life: 0.25, size: 2 + Math.random() * 3, color: "#8fd8ff",
+          });
+        }
+      }
+    }
+
+    // spikes
+    if (state === S_PLAY) {
+      const ph = { x: player.x + 8, y: player.y + 8, w: PLAYER_SIZE - 16, h: PLAYER_SIZE - 8 };
+      for (const s of spikes) {
+        if (s.x > player.x + 200 || s.x + s.w < player.x - 100) continue;
+        if (rectsOverlap(ph, spikeHitbox(s))) { die(); break; }
+      }
+    }
+
+    // trail while grounded and running
+    if (state === S_PLAY && player.onGround && Math.random() < 0.5) {
+      particles.push({
+        x: player.x, y: player.y + PLAYER_SIZE - 4,
+        vx: -120 - Math.random() * 60, vy: -Math.random() * 30,
+        life: 0.35, size: 2 + Math.random() * 3, color: "#2fb8e0",
+      });
+    }
+
+    if (state === S_PLAY && player.x >= LEVEL_LENGTH) win();
+  }
+
+  // camera follows player (frozen on death so the explosion stays in view)
+  if (state !== S_DEAD) {
+    camX = Math.max(0, player.x - W * 0.30);
+  }
+
+  // particles
+  for (const p of particles) {
+    p.life -= dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 900 * dt;
+  }
+  particles = particles.filter(p => p.life > 0);
+
+  // visual beat: same position->beat mapping the music uses, so the world
+  // pulses exactly in time with the kick drum
+  if (state === S_PLAY) {
+    const phase = songBeat(player.x) % 1;
+    beatPulse = Math.pow(1 - (phase < 0 ? phase + 1 : phase), 2.2);
+  } else {
+    beatPulse = Math.max(0, beatPulse - dt * 3);
+  }
+
+  shake = Math.max(0, shake - dt * 40);
+}
+
+// ---------- Drawing ----------
+function drawBackground() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#141033");
+  g.addColorStop(0.7, "#2a1560");
+  g.addColorStop(1, "#3c1a7a");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // parallax stars
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  for (let i = 0; i < 60; i++) {
+    const x = ((i * 173.3 - camX * 0.12) % W + W) % W;
+    const y = (i * 97.7) % (GROUND_Y - 40);
+    const s = (i % 3) + 1;
+    ctx.globalAlpha = 0.25 + (i % 5) * 0.12;
+    ctx.fillRect(x, y, s, s);
+  }
+  ctx.globalAlpha = 1;
+
+  // parallax hills — brighten and lift a touch on each beat
+  ctx.fillStyle = "rgba(" + (90 + 70 * beatPulse) + ", 50, 180, " + (0.35 + 0.25 * beatPulse) + ")";
+  for (let i = -1; i < 8; i++) {
+    const bx = i * 300 - ((camX * 0.3) % 300);
+    ctx.beginPath();
+    ctx.moveTo(bx, GROUND_Y);
+    ctx.lineTo(bx + 150, GROUND_Y - 130 - (i % 3) * 40 - 10 * beatPulse);
+    ctx.lineTo(bx + 300, GROUND_Y);
+    ctx.fill();
+  }
+}
+
+function drawGround() {
+  ctx.fillStyle = "#1c1240";
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+  // glow line — thickens with the kick
+  ctx.fillStyle = "#37f0ff";
+  ctx.fillRect(0, GROUND_Y, W, 3 + 3 * beatPulse);
+  ctx.fillStyle = "rgba(55,240,255," + (0.15 + 0.35 * beatPulse) + ")";
+  ctx.fillRect(0, GROUND_Y + 3, W, 10 + 16 * beatPulse);
+  // moving floor ticks
+  ctx.strokeStyle = "rgba(120, 200, 255, 0.12)";
+  ctx.lineWidth = 2;
+  for (let i = -1; i < W / TILE + 2; i++) {
+    const x = i * TILE - (camX % TILE);
+    ctx.beginPath();
+    ctx.moveTo(x, GROUND_Y + 6);
+    ctx.lineTo(x - 20, H);
+    ctx.stroke();
+  }
+}
+
+function drawSpike(s) {
+  const x = s.x - camX;
+  if (x + s.w < -50 || x > W + 50) return;
+  ctx.fillStyle = "#e8e8ff";
+  ctx.strokeStyle = "#37f0ff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 2, s.y + s.h);
+  ctx.lineTo(x + s.w / 2, s.y + 3);
+  ctx.lineTo(x + s.w - 2, s.y + s.h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // inner triangle
+  ctx.fillStyle = "#0b0b1a";
+  ctx.beginPath();
+  ctx.moveTo(x + s.w * 0.28, s.y + s.h - 3);
+  ctx.lineTo(x + s.w / 2, s.y + s.h * 0.35);
+  ctx.lineTo(x + s.w * 0.72, s.y + s.h - 3);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawBlock(b) {
+  const x = b.x - camX;
+  if (x + b.w < -50 || x > W + 50) return;
+  ctx.fillStyle = "#241a55";
+  ctx.fillRect(x, b.y, b.w, b.h);
+  ctx.strokeStyle = "#37f0ff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 1, b.y + 1, b.w - 2, b.h - 2);
+  ctx.fillStyle = "rgba(55,240,255,0.12)";
+  ctx.fillRect(x + 1, b.y + 1, b.w - 2, 8);
+}
+
+function drawFinish() {
+  const x = LEVEL_LENGTH - camX;
+  if (x > W + 60) return;
+  ctx.fillStyle = "rgba(124, 255, 79, 0.25)";
+  ctx.fillRect(x, 0, 8, GROUND_Y);
+  ctx.fillStyle = "#7cff4f";
+  ctx.fillRect(x, 0, 3, GROUND_Y);
+  // checkered flag
+  for (let ry = 0; ry < 4; ry++) {
+    for (let rx = 0; rx < 4; rx++) {
+      ctx.fillStyle = (rx + ry) % 2 ? "#111" : "#fff";
+      ctx.fillRect(x + 6 + rx * 10, 100 + ry * 10, 10, 10);
+    }
+  }
+}
+
+function drawPlayer() {
+  if (state === S_DEAD) return;
+  const cx = player.x - camX + PLAYER_SIZE / 2;
+  const cy = player.y + PLAYER_SIZE / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(player.rot);
+  const s = PLAYER_SIZE;
+  // glow
+  ctx.shadowColor = "#37f0ff";
+  ctx.shadowBlur = 18 + 14 * beatPulse;
+  // body
+  ctx.fillStyle = "#ffdd30";
+  ctx.fillRect(-s / 2, -s / 2, s, s);
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#0b0b1a";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-s / 2 + 1.5, -s / 2 + 1.5, s - 3, s - 3);
+  // face
+  ctx.fillStyle = "#0b0b1a";
+  ctx.fillRect(-s * 0.28, -s * 0.22, s * 0.16, s * 0.16); // left eye
+  ctx.fillRect(s * 0.12, -s * 0.22, s * 0.16, s * 0.16);  // right eye
+  ctx.fillRect(-s * 0.18, s * 0.12, s * 0.36, s * 0.10);  // mouth
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2.5));
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - camX - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHUD() {
+  // progress bar
+  const bw = 300, bx = (W - bw) / 2, by = 16;
+  const prog = Math.min(1, player.x / LEVEL_LENGTH);
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  roundRect(bx, by, bw, 10, 5);
+  ctx.fill();
+  if (bestProgress > 0) {
+    ctx.fillStyle = "rgba(124,255,79,0.35)";
+    roundRect(bx, by, bw * bestProgress, 10, 5);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#37f0ff";
+  roundRect(bx, by, Math.max(10, bw * prog), 10, 5);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.font = "13px 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(Math.floor(prog * 100) + "%", W / 2, by + 26);
+
+  // attempts
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = "bold 15px 'Segoe UI', sans-serif";
+  ctx.fillText("Attempt " + attempts, 16, 28);
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawOverlays() {
+  if (state === S_READY) {
+    ctx.fillStyle = "rgba(5, 5, 20, 0.55)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#ffdd30";
+    ctx.font = "bold 56px 'Segoe UI', sans-serif";
+    ctx.fillText("CUBE DASH", W / 2, H / 2 - 50);
+    ctx.fillStyle = "#37f0ff";
+    ctx.font = "22px 'Segoe UI', sans-serif";
+    ctx.fillText("Press SPACE or tap to jump", W / 2, H / 2 + 5);
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.font = "16px 'Segoe UI', sans-serif";
+    ctx.fillText("Hold to keep jumping · Don't touch the spikes", W / 2, H / 2 + 38);
+    if (bestProgress > 0 && bestProgress < 1) {
+      ctx.fillStyle = "#7cff4f";
+      ctx.fillText("Best: " + Math.floor(bestProgress * 100) + "%", W / 2, H / 2 + 70);
+    }
+  } else if (state === S_DEAD && deadTimer <= 0) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255, 80, 80, 0.9)";
+    ctx.font = "bold 40px 'Segoe UI', sans-serif";
+    ctx.fillText("CRASHED at " + Math.floor(Math.min(1, player.x / LEVEL_LENGTH) * 100) + "%", W / 2, H / 2 - 20);
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    ctx.font = "20px 'Segoe UI', sans-serif";
+    ctx.fillText("Press SPACE to retry", W / 2, H / 2 + 20);
+  } else if (state === S_WIN && deadTimer <= 0) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#7cff4f";
+    ctx.font = "bold 52px 'Segoe UI', sans-serif";
+    ctx.fillText("LEVEL COMPLETE!", W / 2, H / 2 - 20);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "20px 'Segoe UI', sans-serif";
+    ctx.fillText("Attempts: " + attempts + "  ·  Press SPACE to play again", W / 2, H / 2 + 25);
+  }
+}
+
+function draw() {
+  ctx.save();
+  if (shake > 0) {
+    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  }
+  drawBackground();
+  drawGround();
+  for (const b of blocks) drawBlock(b);
+  for (const s of spikes) drawSpike(s);
+  drawFinish();
+  drawParticles();
+  drawPlayer();
+  ctx.restore();
+  drawHUD();
+  drawOverlays();
+}
+
+// ---------- Main loop ----------
+let lastT = performance.now();
+function frame(t) {
+  let dt = (t - lastT) / 1000;
+  lastT = t;
+  dt = Math.min(dt, 1 / 30); // clamp for tab-switch spikes
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
