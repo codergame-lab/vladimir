@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vladimirs Spelsajt</title>
+  <meta name="description" content="Vladimirs Spelsajt – samling av små webbspel du kan spela direkt i webbläsaren.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+
+  <style>
+  /* ===================== DESIGN (tidigare style.css) ===================== */
+
+  :root {
+    --bg: #0b0d16;
+    --bg-soft: #121629;
+    --line: rgba(255, 255, 255, 0.09);
+    --text: #eef0fa;
+    --muted: #9aa0bd;
+    --accent: #7c5cff;
+    --accent-2: #22d3ee;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* --- bakgrundsljus --- */
+  .glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(110px);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow--a {
+    width: 520px; height: 520px;
+    background: var(--accent);
+    top: -180px; left: -140px;
+  }
+  .glow--b {
+    width: 460px; height: 460px;
+    background: var(--accent-2);
+    top: 220px; right: -180px;
+    opacity: 0.28;
+  }
+
+  /* --- topbar --- */
+  .topbar {
+    position: relative;
+    z-index: 2;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 24px 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+
+  .brand__mark {
+    width: 38px; height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+    color: #0b0d16;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .brand__text em {
+    font-style: normal;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .nav {
+    display: flex;
+    gap: 22px;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+  .nav a:hover { color: var(--text); }
+
+  /* --- hero --- */
+  main { position: relative; z-index: 1; }
+
+  .hero {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 80px 24px 60px;
+    text-align: center;
+  }
+
+  .hero__title {
+    margin: 0;
+    font-size: clamp(2.4rem, 7vw, 4.4rem);
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    font-weight: 800;
+  }
+
+  .hero__title-accent {
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero__lead {
+    max-width: 620px;
+    margin: 22px auto 0;
+    color: var(--muted);
+    font-size: 1.08rem;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 13px 26px;
+    border-radius: 999px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+
+  .btn--primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #0b0d16;
+    box-shadow: 0 12px 30px rgba(124, 92, 255, 0.35);
+  }
+
+  /* --- sektioner --- */
+  .section {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+
+  .section__head { margin-bottom: 32px; }
+  .section__head h2 {
+    margin: 0 0 6px;
+    font-size: 1.9rem;
+    letter-spacing: -0.5px;
+  }
+  .section__head p { margin: 0; color: var(--muted); }
+
+  /* --- spelkort --- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px;
+  }
+
+  .card {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.25s ease;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(124, 92, 255, 0.5);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .card__art {
+    height: 132px;
+    display: grid;
+    place-items: center;
+    font-size: 3rem;
+  }
+
+  /* Färger på spelkorten – lägg till fler här om du behöver */
+  .card__art--1 { background: linear-gradient(135deg, #1f8a70, #0e3b32); }
+  .card__art--2 { background: linear-gradient(135deg, #7c5cff, #2a1d63); }
+  .card__art--3 { background: linear-gradient(135deg, #ff7a59, #5c2418); }
+  .card__art--4 { background: linear-gradient(135deg, #22d3ee, #0f4b57); }
+  .card__art--5 { background: linear-gradient(135deg, #f2c14e, #5c4413); }
+  .card__art--6 { background: linear-gradient(135deg, #3a3f5c, #1a1d2e); }
+  .card__art--7 { background: linear-gradient(135deg, #e05c8f, #5c1f38); }
+  .card__art--8 { background: linear-gradient(135deg, #5b8def, #1b2f5e); }
+  .card__art--9 { background: linear-gradient(135deg, #6ad46a, #1d4a1d); }
+  .card__art--10 { background: linear-gradient(135deg, #b06cf0, #3a1a56); }
+
+  .card__body { padding: 18px 20px 22px; }
+  .card__body h3 { margin: 0 0 6px; font-size: 1.15rem; }
+  .card__body p { margin: 0 0 14px; color: var(--muted); font-size: 0.93rem; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(124, 92, 255, 0.16);
+    color: #c3b4ff;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+  }
+  .tag--muted {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--muted);
+  }
+
+  .card--soon { opacity: 0.72; }
+
+  /* --- om --- */
+  .about__box {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 34px 32px;
+    max-width: 760px;
+  }
+  .about__box h2 { margin: 0 0 12px; font-size: 1.6rem; }
+  .about__box p { margin: 0 0 14px; color: var(--muted); }
+  .about__box p:last-child { margin-bottom: 0; }
+
+  /* --- footer --- */
+  .footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--line);
+    margin-top: 40px;
+    padding: 26px 24px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .footer p { margin: 0; }
+
+  /* --- hemlig kod-ruta --- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .modal[hidden] { display: none; }
+
+  .modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 7, 14, 0.75);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal__box {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    padding: 32px 30px 28px;
+    border: 1px solid rgba(124, 92, 255, 0.4);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    animation: modal-in 0.18s ease-out;
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .modal__box.skaka { animation: skaka 0.4s ease; }
+
+  @keyframes skaka {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(9px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+
+  .modal__x {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .modal__x:hover { color: var(--text); }
+
+  .modal__titel { margin: 0 0 6px; font-size: 1.4rem; }
+  .modal__text { margin: 0 0 20px; color: var(--muted); font-size: 0.92rem; }
+
+  .modal__form { display: grid; gap: 12px; }
+
+  .modal__input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1.25rem;
+    letter-spacing: 6px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .modal__input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.2);
+  }
+  .modal__input::placeholder { letter-spacing: 4px; color: #4a5070; }
+
+  .modal__form .btn { cursor: pointer; font-size: 1rem; }
+
+  .modal__fel {
+    margin: 14px 0 0;
+    color: #ff8080;
+    font-size: 0.88rem;
+  }
+  .modal__fel[hidden] { display: none; }
+
+  /* --- mobil --- */
+  @media (max-width: 600px) {
+    .hero { padding-top: 54px; }
+    .nav { gap: 16px; }
+    .about__box { padding: 26px 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto; }
+  }
+  </style>
+</head>
+<body>
+
+  <div class="glow glow--a" aria-hidden="true"></div>
+  <div class="glow glow--b" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand__mark">V</span>
+      <span class="brand__text">Vladimirs <em>Spelsajt</em></span>
+    </a>
+    <nav class="nav">
+      <a href="#spel">Spel</a>
+      <a href="#om">Om</a>
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <h1 class="hero__title">
+        Välkommen till<br>
+        <span class="hero__title-accent">Vladimirs Spelsajt</span>
+      </h1>
+      <p class="hero__lead">
+        Små spel du kan spela direkt i webbläsaren. Gratis, inget konto.
+      </p>
+    </section>
+
+    <section class="section" id="spel">
+      <div class="section__head">
+        <h2>Spelen</h2>
+        <p>Klicka på ett kort för att spela. Fler spel läggs till efter hand.</p>
+      </div>
+
+      <div class="grid">
+
+        <!-- ===== LÄGG TILL ETT NYTT SPEL: kopiera blocket nedan och byt ut texten =====
+
+        <a class="card" href="LÄNK-TILL-SPELET.html">
+          <div class="card__art card__art--7"><span>🎲</span></div>
+          <div class="card__body">
+            <h3>Spelets namn</h3>
+            <p>En kort mening om vad spelet går ut på.</p>
+            <span class="tag">Kategori</span>
+          </div>
+        </a>
+
+             card__art--1 till --10 = bakgrundsfärg på kortet (färgerna finns i <style> högst upp)
+             <span>🎲</span>        = ikonen, byt mot valfri emoji
+        ========================================================================== -->
+
+        <a class="card" href="spel/snake.html">
+          <div class="card__art card__art--1"><span>🐍</span></div>
+          <div class="card__body">
+            <h3>Snake</h3>
+            <p>Klassikern. Ät, väx och kör inte in i dig själv.</p>
+            <span class="tag">Arkad</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/memory.html">
+          <div class="card__art card__art--2"><span>🃏</span></div>
+          <div class="card__body">
+            <h3>Memory</h3>
+            <p>Vänd kort och hitta paren på så få drag som möjligt.</p>
+            <span class="tag">Pussel</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/pong.html">
+          <div class="card__art card__art--3"><span>🏓</span></div>
+          <div class="card__body">
+            <h3>Pong</h3>
+            <p>Två spelare, ett paddelslag och ingen nåd.</p>
+            <span class="tag">2 spelare</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/tetris.html">
+          <div class="card__art card__art--4"><span>🧱</span></div>
+          <div class="card__body">
+            <h3>Blockfall</h3>
+            <p>Rotera, placera, rensa rader. Det går snabbare än du tror.</p>
+            <span class="tag">Arkad</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/quiz.html">
+          <div class="card__art card__art--5"><span>❓</span></div>
+          <div class="card__body">
+            <h3>Quiz</h3>
+            <p>Tio frågor, femton sekunder per fråga. Hur många klarar du?</p>
+            <span class="tag">Trivia</span>
+          </div>
+        </a>
+
+        <a class="card card--soon" href="#spel">
+          <div class="card__art card__art--6"><span>✨</span></div>
+          <div class="card__body">
+            <h3>Nytt spel</h3>
+            <p>Under uppbyggnad. Kika tillbaka snart.</p>
+            <span class="tag tag--muted">Kommer snart</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="section about" id="om">
+      <div class="about__box">
+        <h2>Om sajten</h2>
+        <p>
+          Vladimirs Spelsajt är ett hobbyprojekt. Alla spel körs helt i din webbläsare –
+          ingen installation, inga konton och inget som sparas någon annanstans än lokalt hos dig.
+        </p>
+        <p>
+          Sidan är byggd med ren HTML, CSS och JavaScript och ligger på GitHub Pages.
+          Har du ett spelförslag? Öppna gärna ett issue i repot.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="ar">2026</span> Vladimirs Spelsajt · Byggd för skoj skull</p>
+  </footer>
+
+  <!-- Hemlig kod: öppnas med tangenten G -->
+  <div class="modal" id="kodModal" hidden>
+    <div class="modal__backdrop" data-stang></div>
+    <div class="modal__box" role="dialog" aria-modal="true" aria-labelledby="kodTitel">
+      <button class="modal__x" type="button" data-stang aria-label="Stäng">×</button>
+      <h2 class="modal__titel" id="kodTitel">Hemlig kod</h2>
+      <p class="modal__text">Skriv in koden för att komma vidare.</p>
+      <form class="modal__form" id="kodForm" autocomplete="off">
+        <input class="modal__input" id="kodInput" type="text" placeholder="? ? ? ?" maxlength="10" aria-label="Hemlig kod">
+        <button class="btn btn--primary" type="submit">Lås upp</button>
+      </form>
+      <p class="modal__fel" id="kodFel" role="alert" hidden>Fel kod. Försök igen.</p>
+    </div>
+  </div>
+
+  <script>
+  /* ===================== SKRIPT (tidigare script.js) ===================== */
+
+  // Byt till namnet på din hemliga sida om den heter något annat.
+  var HEMLIG_SIDA = 'hemlig.html';
+  var HEMLIG_KOD = 'VLAD';
+
+  document.getElementById('ar').textContent = new Date().getFullYear();
+
+  var modal = document.getElementById('kodModal');
+  var form = document.getElementById('kodForm');
+  var input = document.getElementById('kodInput');
+  var fel = document.getElementById('kodFel');
+
+  function oppnaModal() {
+    modal.hidden = false;
+    fel.hidden = true;
+    input.value = '';
+    input.focus();
+  }
+
+  function stangModal() {
+    modal.hidden = true;
+  }
+
+  // Tryck G för att öppna rutan (men inte medan man skriver i ett fält).
+  document.addEventListener('keydown', function (e) {
+    var skriverText = /^(input|textarea|select)$/i.test(e.target.tagName) || e.target.isContentEditable;
+
+    if (e.key === 'Escape' && !modal.hidden) {
+      stangModal();
+      return;
+    }
+
+    if (skriverText || e.ctrlKey || e.altKey || e.metaKey) return;
+
+    if (e.key === 'g' || e.key === 'G') {
+      if (modal.hidden) {
+        e.preventDefault();
+        oppnaModal();
+      }
+    }
+  });
+
+  // Stäng via krysset eller genom att klicka utanför rutan.
+  Array.prototype.forEach.call(modal.querySelectorAll('[data-stang]'), function (el) {
+    el.addEventListener('click', stangModal);
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (input.value.trim().toUpperCase() === HEMLIG_KOD) {
+      window.location.href = HEMLIG_SIDA;
+    } else {
+      fel.hidden = false;
+      input.value = '';
+      input.focus();
+      modal.querySelector('.modal__box').classList.remove('skaka');
+      void modal.querySelector('.modal__box').offsetWidth; // starta om animationen
+      modal.querySelector('.modal__box').classList.add('skaka');
+    }
+  });
+
+  input.addEventListener('input', function () {
+    fel.hidden = true;
+  });
+  </script>
+
+</body>
+</html>
