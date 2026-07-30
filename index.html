@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vladimirs Spelsajt</title>
+  <meta name="description" content="Vladimirs Spelsajt – samling av små webbspel du kan spela direkt i webbläsaren.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body>
+
+  <div class="glow glow--a" aria-hidden="true"></div>
+  <div class="glow glow--b" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand__mark">V</span>
+      <span class="brand__text">Vladimirs <em>Spelsajt</em></span>
+    </a>
+    <nav class="nav">
+      <a href="#spel">Spel</a>
+      <a href="#om">Om</a>
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <h1 class="hero__title">
+        Välkommen till<br>
+        <span class="hero__title-accent">Vladimirs Spelsajt</span>
+      </h1>
+      <p class="hero__lead">
+        Små spel du kan spela direkt i webbläsaren. Gratis, inget konto.
+      </p>
+    </section>
+
+    <section class="section" id="spel">
+      <div class="section__head">
+        <h2>Spelen</h2>
+        <p>Klicka på ett kort för att spela. Fler spel läggs till efter hand.</p>
+      </div>
+
+      <div class="grid">
+
+        <!-- ===== LÄGG TILL ETT NYTT SPEL: kopiera blocket nedan och byt ut texten =====
+
+        <a class="card" href="LÄNK-TILL-SPELET.html">
+          <div class="card__art card__art--7"><span>🎲</span></div>
+          <div class="card__body">
+            <h3>Spelets namn</h3>
+            <p>En kort mening om vad spelet går ut på.</p>
+            <span class="tag">Kategori</span>
+          </div>
+        </a>
+
+             card__art--1 till --10 = bakgrundsfärg på kortet (se style.css)
+             <span>🎲</span>        = ikonen, byt mot valfri emoji
+        ========================================================================== -->
+
+        <a class="card" href="spel/snake.html">
+          <div class="card__art card__art--1"><span>🐍</span></div>
+          <div class="card__body">
+            <h3>Snake</h3>
+            <p>Klassikern. Ät, väx och kör inte in i dig själv.</p>
+            <span class="tag">Arkad</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/memory.html">
+          <div class="card__art card__art--2"><span>🃏</span></div>
+          <div class="card__body">
+            <h3>Memory</h3>
+            <p>Vänd kort och hitta paren på så få drag som möjligt.</p>
+            <span class="tag">Pussel</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/pong.html">
+          <div class="card__art card__art--3"><span>🏓</span></div>
+          <div class="card__body">
+            <h3>Pong</h3>
+            <p>Två spelare, ett paddelslag och ingen nåd.</p>
+            <span class="tag">2 spelare</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/tetris.html">
+          <div class="card__art card__art--4"><span>🧱</span></div>
+          <div class="card__body">
+            <h3>Blockfall</h3>
+            <p>Rotera, placera, rensa rader. Det går snabbare än du tror.</p>
+            <span class="tag">Arkad</span>
+          </div>
+        </a>
+
+        <a class="card" href="spel/quiz.html">
+          <div class="card__art card__art--5"><span>❓</span></div>
+          <div class="card__body">
+            <h3>Quiz</h3>
+            <p>Tio frågor, femton sekunder per fråga. Hur många klarar du?</p>
+            <span class="tag">Trivia</span>
+          </div>
+        </a>
+
+        <a class="card card--soon" href="#spel">
+          <div class="card__art card__art--6"><span>✨</span></div>
+          <div class="card__body">
+            <h3>Nytt spel</h3>
+            <p>Under uppbyggnad. Kika tillbaka snart.</p>
+            <span class="tag tag--muted">Kommer snart</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="section about" id="om">
+      <div class="about__box">
+        <h2>Om sajten</h2>
+        <p>
+          Vladimirs Spelsajt är ett hobbyprojekt. Alla spel körs helt i din webbläsare –
+          ingen installation, inga konton och inget som sparas någon annanstans än lokalt hos dig.
+        </p>
+        <p>
+          Sidan är byggd med ren HTML, CSS och JavaScript och ligger på GitHub Pages.
+          Har du ett spelförslag? Öppna gärna ett issue i repot.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="ar">2026</span> Vladimirs Spelsajt · Byggd för skoj skull</p>
+  </footer>
+
+  <!-- Hemlig kod: öppnas med tangenten G -->
+  <div class="modal" id="kodModal" hidden>
+    <div class="modal__backdrop" data-stang></div>
+    <div class="modal__box" role="dialog" aria-modal="true" aria-labelledby="kodTitel">
+      <button class="modal__x" type="button" data-stang aria-label="Stäng">×</button>
+      <h2 class="modal__titel" id="kodTitel">Hemlig kod</h2>
+      <p class="modal__text">Skriv in koden för att komma vidare.</p>
+      <form class="modal__form" id="kodForm" autocomplete="off">
+        <input class="modal__input" id="kodInput" type="text" placeholder="? ? ? ?" maxlength="10" aria-label="Hemlig kod">
+        <button class="btn btn--primary" type="submit">Lås upp</button>
+      </form>
+      <p class="modal__fel" id="kodFel" role="alert" hidden>Fel kod. Försök igen.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
